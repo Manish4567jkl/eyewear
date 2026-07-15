@@ -1,0 +1,959 @@
+/* Maison Vellora — homepage "magazine" experience. Ported 1:1 from the finalized
+   Claude Design handoff (Maison Vellora Homepage.dc.html) — a 6-plate, wheel/arrow
+   paginated single-viewport composition, not a normal scrolling page. Self-contained
+   on purpose: this design language (Bodoni Moda / Space Mono / Archivo, the oklch
+   palette below) is a deliberate departure from the rest of the site's Atelier Noir
+   system and does not share base.css/craft.css. A follow-up pass propagates the
+   tokens here into the shared system once collection/PDP pages are brought along. */
+
+:root {
+  --mv-paper: oklch(0.97 0.01 85);
+  --mv-ink: oklch(0.18 0.01 40);
+  --mv-accent: oklch(0.4 0.16 25);
+  --mv-cover-bg: oklch(0.13 0.04 25);
+  --mv-collection-bg: oklch(0.95 0.015 80);
+  --mv-atelier-accent: oklch(0.72 0.13 80);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  cursor: none;
+  background: var(--mv-paper);
+}
+
+body {
+  font-family: "Archivo", sans-serif;
+}
+
+@media (max-width: 720px), (hover: none) and (pointer: coarse) {
+  html, body {
+    cursor: auto;
+  }
+}
+
+a, button {
+  text-decoration: none;
+  color: inherit;
+  cursor: none;
+  font: inherit;
+  background: none;
+  border: none;
+}
+
+@media (max-width: 720px), (hover: none) and (pointer: coarse) {
+  a, button {
+    cursor: pointer;
+  }
+}
+
+::selection {
+  background: var(--mv-accent);
+  color: var(--mv-paper);
+}
+
+@keyframes mv-intro-rule {
+  from { width: 0; }
+  to { width: 220px; }
+}
+
+@keyframes mv-intro-curtain {
+  to { clip-path: inset(0 0 0 100%); }
+}
+
+.mv-app {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: var(--mv-paper);
+  color: var(--mv-ink);
+  overflow: hidden;
+}
+
+/* ---------- Intro ---------- */
+
+.mv-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--mv-paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  animation: mv-intro-curtain 0.8s cubic-bezier(0.76, 0, 0.24, 1) 1.8s forwards;
+}
+
+.mv-intro[hidden] {
+  display: none;
+}
+
+.mv-intro-plate {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--mv-accent);
+}
+
+.mv-intro-title {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(48px, 6vw, 84px);
+  line-height: 1;
+}
+
+.mv-intro-rule {
+  height: 1px;
+  background: var(--mv-ink);
+  animation: mv-intro-rule 1s cubic-bezier(0.65, 0, 0.35, 1) 0.3s both;
+}
+
+/* ---------- Custom cursor ---------- */
+
+.mv-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  z-index: 999;
+  will-change: transform;
+}
+
+@media (max-width: 720px), (hover: none) and (pointer: coarse) {
+  .mv-cursor {
+    display: none;
+  }
+}
+
+.mv-cursor-ring {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--mv-accent);
+  border-radius: 0%;
+  transition: border-radius 0.3s ease, transform 0.3s ease;
+}
+
+.mv-cursor-ring.is-magnetized {
+  border-radius: 50%;
+  transform: scale(1.6);
+}
+
+.mv-cursor-h,
+.mv-cursor-v {
+  position: absolute;
+  background: var(--mv-accent);
+}
+
+.mv-cursor-h {
+  top: 50%;
+  left: -6px;
+  right: -6px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.mv-cursor-v {
+  left: 50%;
+  top: -6px;
+  bottom: -6px;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.mv-cursor-label {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mv-accent);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.mv-cursor-label.is-visible {
+  opacity: 1;
+}
+
+/* ---------- Top bar ---------- */
+
+.mv-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 5%;
+  mix-blend-mode: difference;
+  color: var(--mv-paper);
+}
+
+.mv-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.mv-brand-name {
+  font-family: "Bodoni Moda", serif;
+  font-size: 17px;
+}
+
+.mv-brand-issue {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+
+.mv-dots {
+  display: flex;
+  gap: 10px;
+}
+
+.mv-dot {
+  height: 6px;
+  background: currentColor;
+  opacity: 0.4;
+  transition: all 0.3s ease;
+  width: 10px;
+}
+
+.mv-dot.is-active {
+  width: 22px;
+  opacity: 1;
+}
+
+/* ---------- Pages ---------- */
+
+.mv-pages {
+  position: absolute;
+  inset: 0;
+}
+
+.mv-page {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.mv-page::-webkit-scrollbar {
+  display: none;
+}
+
+.mv-page--cover,
+.mv-page--atelier {
+  background: var(--mv-cover-bg);
+  color: var(--mv-paper);
+}
+
+.mv-page--contents,
+.mv-page--configurator,
+.mv-page--colophon {
+  background: var(--mv-paper);
+  color: var(--mv-ink);
+}
+
+.mv-page--collection {
+  background: var(--mv-collection-bg);
+  color: var(--mv-ink);
+}
+
+.mv-plate-label {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--mv-accent);
+}
+
+/* ---------- Cover ---------- */
+
+.mv-cover {
+  width: 100%;
+  height: 100%;
+  padding: 8vw 6%;
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 40px;
+  align-items: end;
+}
+
+.mv-cover-issue {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  opacity: 0.7;
+  margin-bottom: 24px;
+}
+
+.mv-cover-title {
+  font-family: "Bodoni Moda", serif;
+  font-size: clamp(70px, 10.5vw, 190px);
+  line-height: 0.92;
+  margin: 0;
+}
+
+.mv-cover-sub {
+  max-width: 380px;
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 32px 0 0;
+  font-style: italic;
+  font-family: "Bodoni Moda", serif;
+  opacity: 0.85;
+}
+
+.mv-cover-plate {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border: 1px solid oklch(0.97 0.01 85 / 0.25);
+  overflow: hidden;
+}
+
+.mv-cover-plate canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.mv-plate-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 16px;
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  opacity: 0.7;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.28), transparent);
+  pointer-events: none;
+}
+
+/* ---------- Contents ---------- */
+
+.mv-contents {
+  width: 100%;
+  height: 100%;
+  padding: 8vw 6%;
+  display: grid;
+  grid-template-columns: 6fr 6fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.mv-contents-label {
+  margin-bottom: 28px;
+}
+
+.mv-contents-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid oklch(0.18 0.01 40 / 0.15);
+  width: 100%;
+  text-align: left;
+}
+
+.mv-contents-row-n {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 15px;
+  opacity: 0.5;
+  width: 24px;
+  flex: none;
+}
+
+.mv-contents-row-t {
+  font-family: "Bodoni Moda", serif;
+  font-size: 20px;
+  flex: 1;
+}
+
+.mv-contents-row-p {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.mv-contents-quote {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1.3;
+  color: var(--mv-accent);
+  margin: 0;
+}
+
+/* ---------- Configurator ---------- */
+
+.mv-configurator {
+  width: 100%;
+  height: 100%;
+  padding: 7vw 6% calc(3vw + 56px);
+  display: flex;
+  flex-direction: column;
+}
+
+.mv-configurator-title {
+  font-family: "Bodoni Moda", serif;
+  font-size: clamp(32px, 4vw, 54px);
+  line-height: 1;
+  margin: 10px 0 20px;
+}
+
+.mv-configurator-body {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 48px;
+  flex: 1;
+  min-height: 0;
+}
+
+.mv-configurator-rail {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.mv-product-tabs {
+  display: flex;
+  flex-direction: column;
+}
+
+.mv-product-tab {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 7px 0;
+  border-bottom: 1px solid oklch(0.18 0.01 40 / 0.15);
+  text-align: left;
+  white-space: nowrap;
+  color: oklch(0.18 0.01 40 / 0.45);
+}
+
+.mv-product-tab.is-active {
+  color: var(--mv-accent);
+}
+
+.mv-product-tab-numeral {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 16px;
+}
+
+.mv-product-tab-name {
+  font-size: 12px;
+}
+
+.mv-product-desc {
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.65;
+  max-width: 280px;
+  margin: 10px 0 16px;
+}
+
+.mv-swatch-group {
+  margin-bottom: 14px;
+}
+
+.mv-swatch-group-label {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+
+.mv-swatch-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mv-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.mv-swatch-dot {
+  display: block;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px oklch(0.18 0.01 40 / 0.2);
+}
+
+.mv-swatch.is-active .mv-swatch-dot {
+  box-shadow: 0 0 0 2px var(--mv-paper), 0 0 0 3px var(--mv-ink);
+}
+
+.mv-wall-label {
+  border-top: 1px solid oklch(0.18 0.01 40 / 0.18);
+  padding-top: 10px;
+}
+
+.mv-wall-label-title {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+
+.mv-wall-label-readout {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mv-wall-label-cta {
+  display: inline-block;
+  margin-top: 10px;
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mv-accent);
+  border-bottom: 1px solid var(--mv-accent);
+  padding-bottom: 2px;
+}
+
+.mv-configurator-stage {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.mv-viewer {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  border: 1px solid oklch(0.18 0.01 40 / 0.3);
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.mv-viewer canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.mv-viewer-label {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.mv-configurator-modes {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+  border-top: 1px solid oklch(0.18 0.01 40 / 0.15);
+  padding-top: 10px;
+}
+
+.mv-mode {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: oklch(0.18 0.01 40 / 0.45);
+  border-bottom: 1px solid transparent;
+  padding-bottom: 3px;
+}
+
+.mv-mode.is-active {
+  color: var(--mv-ink);
+  border-bottom-color: var(--mv-accent);
+}
+
+.mv-angles {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.mv-angles-label {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  opacity: 0.45;
+  text-transform: uppercase;
+}
+
+.mv-angle {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 13px;
+  color: oklch(0.18 0.01 40 / 0.45);
+  border-bottom: 1px solid transparent;
+}
+
+.mv-angle.is-active {
+  color: var(--mv-accent);
+  border-bottom-color: var(--mv-accent);
+}
+
+/* ---------- Collection ---------- */
+
+.mv-collection {
+  width: 100%;
+  height: 100%;
+  padding: 6vw 6%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mv-collection-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.mv-collection-quote {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 20px;
+  margin: 0;
+}
+
+.mv-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  flex: 1;
+}
+
+.mv-plate {
+  display: block;
+  color: inherit;
+}
+
+.mv-plate-media {
+  aspect-ratio: 4 / 3;
+  border: 1px solid oklch(0.18 0.01 40 / 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+}
+
+.mv-plate-fig {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.mv-plate-meta {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mv-plate-name {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 13px;
+}
+
+.mv-plate-price {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  opacity: 0.55;
+}
+
+.mv-collection-footline {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(20px, 2.4vw, 30px);
+  line-height: 1.3;
+  color: var(--mv-accent);
+  margin: 28px 0 0;
+}
+
+/* ---------- Atelier ---------- */
+
+.mv-atelier {
+  width: 100%;
+  height: 100%;
+  padding: 7vw 6%;
+  display: grid;
+  grid-template-columns: 6fr 6fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.mv-atelier-plate {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  border: 1px solid oklch(0.97 0.01 85 / 0.25);
+  overflow: hidden;
+}
+
+.mv-atelier-plate canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.mv-atelier-label {
+  color: var(--mv-atelier-accent);
+  margin-bottom: 16px;
+}
+
+.mv-atelier-number {
+  font-family: "Bodoni Moda", serif;
+  font-size: clamp(56px, 7vw, 100px);
+  line-height: 0.9;
+  margin: 0;
+}
+
+.mv-atelier-caption {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin: 4px 0 0;
+}
+
+.mv-atelier-body {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 0.85;
+  max-width: 340px;
+  margin: 20px 0 0;
+}
+
+/* ---------- Colophon ---------- */
+
+.mv-colophon {
+  width: 100%;
+  height: 100%;
+  padding: 6vw 6%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mv-colophon-top {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid oklch(0.18 0.01 40 / 0.18);
+}
+
+.mv-colophon-wordmark {
+  font-family: "Bodoni Moda", serif;
+  font-size: clamp(30px, 3.6vw, 46px);
+  line-height: 1;
+  margin: 0;
+}
+
+.mv-colophon-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+}
+
+.mv-colophon-col-label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+
+.mv-colophon-col a {
+  text-align: left;
+}
+
+.mv-newsletter-label {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.mv-newsletter-form {
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid oklch(0.18 0.01 40 / 0.4);
+  padding-bottom: 6px;
+}
+
+.mv-newsletter-form input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--mv-ink);
+  font-family: "Archivo", sans-serif;
+  font-size: 12px;
+  flex: 1;
+  cursor: text;
+}
+
+.mv-newsletter-form button {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mv-newsletter-note {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  opacity: 0.55;
+  margin-top: 8px;
+  height: 12px;
+}
+
+.mv-colophon-bottom {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  opacity: 0.5;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mv-colophon-bottom .mv-end {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+}
+
+.mv-colophon-bottom a {
+  opacity: 1;
+  border-bottom: 1px solid currentColor;
+}
+
+/* ---------- Prev / Next / Counter ---------- */
+
+.mv-nav {
+  position: absolute;
+  bottom: 5%;
+  z-index: 45;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  mix-blend-mode: difference;
+  color: var(--mv-paper);
+}
+
+.mv-nav[disabled] {
+  opacity: 0.3;
+}
+
+.mv-nav-prev {
+  left: 5%;
+}
+
+.mv-nav-next {
+  right: 5%;
+}
+
+.mv-counter {
+  position: absolute;
+  left: 50%;
+  bottom: 5%;
+  transform: translateX(-50%);
+  z-index: 45;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  mix-blend-mode: difference;
+  color: oklch(0.97 0.01 85 / 0.7);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 900px) {
+  .mv-cover,
+  .mv-contents,
+  .mv-atelier {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 28px;
+    overflow-y: auto;
+    padding-top: 22vw;
+  }
+
+  .mv-cover {
+    padding-top: 10vw;
+  }
+
+  .mv-cover-plate {
+    aspect-ratio: 16 / 10;
+  }
+
+  .mv-configurator-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .mv-collection-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mv-colophon-top {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .mv-topbar {
+    padding: 20px 6%;
+  }
+}
+
+@media (max-width: 560px) {
+  .mv-collection-grid {
+    grid-template-columns: 1fr;
+  }
+}
