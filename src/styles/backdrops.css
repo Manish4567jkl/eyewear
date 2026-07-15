@@ -1,0 +1,33 @@
+/* Atelier Noir pacing components: the oversized statement line used as breathing
+   punctuation between sections. Ink is the page default (see base.css tokens) — this
+   file no longer carries a multi-tone backdrop system; the only designed light
+   exception is the Craft section's `.light-zone`/`.craft` cream surface. The dark-to-
+   cream crossfade itself is handled by scroll-driven background-color tweens in
+   src/bgCrossfade.js, not by section background classes. */
+
+.statement {
+  padding: 140px 48px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.statement-text {
+  font-family: "Playfair Display", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(46px, 9vw, 148px);
+  line-height: 0.98;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--cream);
+}
+
+.light-zone .statement-text {
+  color: #1a1815;
+}
+
+@media (max-width: 720px) {
+  .statement {
+    padding: 90px 24px;
+  }
+}

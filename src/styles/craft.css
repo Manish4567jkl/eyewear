@@ -1,0 +1,187 @@
+/* Shared "Craft" pinned, scroll-scrubbed editorial sequence — used identically by the
+   home page and every product page (see src/craftSequence.js for the matching motion).
+   Atelier Noir is ink-dominant everywhere else; Craft is the deliberate cream/ivory
+   breathing exception (see .light-zone in base.css) — one of the 1-2 light moments per
+   page, not the default. */
+
+.craft {
+  background: var(--cream);
+  color: #1a1815;
+}
+
+.craft .eyebrow {
+  color: var(--brass);
+}
+
+.craft .section-title,
+.craft .section-sub {
+  color: #1a1815;
+}
+
+.craft-pin {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 90px 0;
+}
+
+.craft-head {
+  margin-bottom: 56px;
+}
+
+.craft-stack {
+  position: relative;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 48px;
+  height: min(58vh, 540px);
+}
+
+.craft-step {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  align-items: center;
+  gap: 100px;
+}
+
+.craft-step.reverse {
+  grid-template-columns: 1.15fr 0.85fr;
+}
+
+.craft-step.reverse .craft-media {
+  order: 2;
+}
+
+.craft-step.reverse .craft-text {
+  order: 1;
+}
+
+.craft-media {
+  position: relative;
+  height: 100%;
+  max-height: 540px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--charcoal);
+}
+
+.craft-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 45%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 40%, rgba(12, 11, 10, 0.2) 100%);
+}
+
+.media-metal, .media-hinge {
+  background: radial-gradient(ellipse at 35% 30%, #e9e2d4 0%, #cabb9d 38%, #a6825a 72%, #4a3a26 100%);
+}
+
+.media-lens, .media-lens-edge {
+  background: radial-gradient(ellipse at 60% 35%, #f4f6f4 0%, #d9e2df 30%, #a9bdb8 62%, #6d8580 100%);
+}
+
+.media-temple, .media-engraving {
+  background: radial-gradient(ellipse at 40% 60%, #e3d9c8 0%, #b6a488 40%, #7d6b4e 75%, #4a3d2a 100%);
+}
+
+.craft-caption {
+  position: absolute;
+  left: 22px;
+  bottom: 18px;
+  font-family: "Inter", sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream);
+  opacity: 0.8;
+}
+
+.craft-text .eyebrow {
+  margin-bottom: 16px;
+}
+
+.craft-heading {
+  font-family: "Playfair Display", serif;
+  font-style: italic;
+  font-size: 30px;
+  margin: 0 0 20px;
+  color: #1a1815;
+}
+
+.craft-body {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 19px;
+  line-height: 1.65;
+  color: #1a1815;
+  opacity: 0.78;
+  max-width: 440px;
+  margin: 0;
+}
+
+.craft-progress {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 48px;
+}
+
+.craft-progress-dot {
+  position: relative;
+  width: 30px;
+  height: 2px;
+  background: var(--hairline);
+  overflow: hidden;
+}
+
+.craft-progress-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--brass);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.craft-progress-dot.active::after {
+  transform: scaleX(1);
+}
+
+@media (max-width: 900px) {
+  .craft-pin {
+    min-height: 0;
+    padding: 90px 0;
+  }
+  .craft-stack {
+    height: auto;
+    padding: 0 24px;
+  }
+  .craft-step,
+  .craft-step.reverse {
+    position: relative;
+    inset: auto;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    margin-bottom: 90px;
+    clip-path: none !important;
+  }
+  .craft-step.reverse .craft-media,
+  .craft-step.reverse .craft-text {
+    order: initial;
+  }
+  .craft-step:last-child {
+    margin-bottom: 0;
+  }
+  .craft-media {
+    aspect-ratio: 4 / 5;
+    height: auto;
+  }
+  .craft-progress {
+    display: none;
+  }
+}

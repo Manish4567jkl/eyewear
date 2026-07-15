@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maison Vellora — Collection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=Playfair+Display:ital,wght@0,500;1,400;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles/base.css" />
+    <link rel="stylesheet" href="/src/styles/backdrops.css" />
+    <style>
+      /* ---------- Collection header ---------- */
+
+      .collection-header {
+        padding: 200px 48px 70px;
+        max-width: 860px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .collection-header .eyebrow {
+        justify-content: center;
+        display: flex;
+      }
+
+      .collection-header .collection-title {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-weight: 400;
+        font-size: clamp(56px, 9vw, 130px);
+        margin: 0 0 22px;
+        line-height: 0.96;
+        letter-spacing: -0.01em;
+      }
+
+      .collection-header .collection-desc {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 19px;
+        line-height: 1.65;
+        opacity: 0.78;
+        margin: 0;
+      }
+
+      /* ---------- Filter tabs ---------- */
+
+      .filter-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 34px;
+        padding: 0 48px 60px;
+      }
+
+      .filter-tab {
+        font-family: "Cormorant Garamond", serif;
+        font-weight: 400;
+        font-size: 18px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text);
+        opacity: 0.5;
+        background: none;
+        border: none;
+        padding: 0 0 10px;
+        cursor: pointer;
+        position: relative;
+        transition: opacity var(--dur-release) var(--ease-out-soft);
+      }
+
+      .filter-tab::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 1.5px;
+        background: var(--brass);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--dur-snap) var(--ease-out-expo);
+      }
+
+      .filter-tab:hover {
+        opacity: 0.75;
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .filter-tab.active {
+        opacity: 1;
+      }
+
+      .filter-tab.active::after {
+        transform: scaleX(1);
+      }
+
+      /* ---------- Flagship band: the first product of the current filter gets a
+         significantly larger, full-width treatment — an editorial lookbook opener, not
+         another grid item. The visual bleeds to the viewport's right edge rather than
+         sitting centered-and-contained. Charcoal is the secondary surface (card/panel
+         differentiation against the ink page); the glow accent is set per-collection by
+         collection.js — brass for Heritage, cream for Meridian — same distinction the
+         home page's Collections tiles use. ---------- */
+
+      .flagship-band {
+        position: relative;
+        display: grid;
+        grid-template-columns: 0.92fr 1.08fr;
+        align-items: center;
+        min-height: 84vh;
+        margin-bottom: 10px;
+        background: var(--charcoal);
+        overflow: hidden;
+      }
+
+      .flagship-band::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 78% 30%, var(--flagship-accent, var(--brass)) 0%, transparent 55%);
+        opacity: 0.28;
+        pointer-events: none;
+      }
+
+      .flagship-copy {
+        position: relative;
+        z-index: 2;
+        padding: 0 0 0 64px;
+        max-width: 560px;
+      }
+
+      .flagship-name {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-size: clamp(48px, 6.5vw, 104px);
+        line-height: 0.95;
+        margin: 0 0 20px;
+      }
+
+      .flagship-desc {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 20px;
+        line-height: 1.6;
+        opacity: 0.82;
+        margin: 0 0 26px;
+        max-width: 460px;
+      }
+
+      .flagship-price {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        letter-spacing: 0.06em;
+        opacity: 0.7;
+        margin: 0 0 26px;
+      }
+
+      .flagship-visual {
+        position: relative;
+        height: 100%;
+        min-height: 84vh;
+        overflow: hidden;
+      }
+
+      .flagship-visual::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 52%);
+      }
+
+      .flagship-type-tag {
+        position: absolute;
+        top: 32px;
+        left: 32px;
+        z-index: 2;
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cream);
+        opacity: 0.9;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 6px 14px;
+        border-radius: 20px;
+        backdrop-filter: blur(4px);
+      }
+
+      @media (max-width: 900px) {
+        .flagship-band {
+          grid-template-columns: 1fr;
+          min-height: 0;
+        }
+        .flagship-visual {
+          min-height: 52vh;
+          order: -1;
+        }
+        .flagship-copy {
+          padding: 60px 24px;
+          max-width: none;
+        }
+      }
+
+      /* ---------- Editorial grid: the remaining pieces, deliberately unequal in size and
+         vertically offset — a magazine layout, not an inventory grid. Dense packing lets
+         cards of different spans settle without leaving awkward gaps. ---------- */
+
+      .product-grid-section {
+        position: relative;
+        padding: 130px 0 160px;
+        overflow: hidden;
+      }
+
+      .product-grid-section::before {
+        content: "";
+        position: absolute;
+        top: 10%;
+        left: 50%;
+        width: 60vw;
+        max-width: 900px;
+        aspect-ratio: 1;
+        transform: translateX(-50%);
+        background: radial-gradient(circle, var(--grid-accent, var(--brass)) 0%, rgba(12, 11, 10, 0) 68%);
+        opacity: 0.18;
+        pointer-events: none;
+      }
+
+      .product-grid {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        grid-auto-flow: dense;
+        gap: 40px;
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 0 48px;
+      }
+
+      .product-card {
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        color: var(--text);
+        grid-column: span 6;
+      }
+
+      .product-card.size-large {
+        grid-column: span 7;
+      }
+
+      .product-card.size-medium {
+        grid-column: span 5;
+        margin-top: 90px;
+      }
+
+      .product-card.size-small {
+        grid-column: span 4;
+        margin-top: 40px;
+      }
+
+      .product-swatch {
+        position: relative;
+        aspect-ratio: 4 / 5;
+        border-radius: 2px;
+        margin-bottom: 24px;
+        overflow: hidden;
+      }
+
+      .product-card.size-large .product-swatch {
+        aspect-ratio: 5 / 4;
+      }
+
+      .product-swatch::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 50%);
+      }
+
+      .product-type-tag {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        z-index: 2;
+        font-family: "Inter", sans-serif;
+        font-size: 9.5px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--cream);
+        opacity: 0.85;
+        background: rgba(0, 0, 0, 0.42);
+        padding: 5px 10px;
+        border-radius: 20px;
+        backdrop-filter: blur(4px);
+      }
+
+      .product-name {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-size: clamp(24px, 2.4vw, 34px);
+        margin: 0 0 8px;
+      }
+
+      .product-desc {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 16.5px;
+        line-height: 1.5;
+        opacity: 0.78;
+        margin: 0 0 12px;
+      }
+
+      .product-price {
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        opacity: 0.7;
+        margin: 0 0 16px;
+      }
+
+      .product-card {
+        transform: translateY(0);
+        transition: transform var(--dur-release) var(--ease-out-soft);
+      }
+
+      .product-card:hover {
+        transform: translateY(-4px);
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .empty-state {
+        text-align: center;
+        font-family: "Cormorant Garamond", serif;
+        font-style: italic;
+        font-size: 18px;
+        opacity: 0.6;
+        padding: 40px 0;
+        grid-column: 1 / -1;
+      }
+
+      @media (max-width: 1000px) {
+        .product-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .product-card,
+        .product-card.size-large,
+        .product-card.size-medium,
+        .product-card.size-small {
+          grid-column: span 1;
+          margin-top: 0;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .product-grid {
+          grid-template-columns: 1fr;
+        }
+        .collection-header {
+          padding: 150px 24px 50px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="breadcrumb" id="breadcrumb"></div>
+
+    <header class="site-header" id="site-header">
+      <a class="wordmark" href="/index.html">Maison Vellora</a>
+      <nav class="site-nav">
+        <button type="button" class="nav-trigger" id="nav-collections-trigger" aria-expanded="false" aria-controls="nav-mega-menu">
+          Collections
+        </button>
+        <a href="/collections/all/" id="nav-shop-all">Shop All</a>
+        <a href="/index.html#craft">Craft</a>
+        <a href="/configurator.html">Configurator</a>
+        <a href="/index.html#contact">Contact</a>
+      </nav>
+    </header>
+
+    <div class="mega-menu" id="nav-mega-menu">
+      <div class="mega-menu-inner"></div>
+    </div>
+
+    <section class="collection-header">
+      <div class="eyebrow" id="collection-eyebrow"></div>
+      <h1 class="collection-title reveal" id="collection-title"></h1>
+      <p class="collection-desc reveal" id="collection-desc"></p>
+    </section>
+
+    <div class="filter-tabs reveal" id="filter-tabs"></div>
+
+    <section class="flagship-band" id="flagship-band"></section>
+
+    <section class="product-grid-section">
+      <div class="product-grid" id="product-grid"></div>
+    </section>
+
+    <footer class="site-footer" id="contact">
+      <div class="footer-top">
+        <div class="footer-wordmark">Maison Vellora</div>
+        <div class="footer-links">
+          <div class="footer-col">
+            <span class="footer-col-title">Shop</span>
+            <a href="/collections/all/">Shop All</a>
+            <a href="/collections/heritage/">The Heritage Collection</a>
+            <a href="/collections/meridian/">The Meridian Collection</a>
+            <a href="/configurator.html">Configurator</a>
+          </div>
+          <div class="footer-col">
+            <span class="footer-col-title">Company</span>
+            <a href="/index.html#craft">Craft</a>
+            <a href="/index.html#contact">About</a>
+            <a href="mailto:atelier@maisonvellora.com">Contact</a>
+          </div>
+          <div class="footer-col">
+            <span class="footer-col-title">Legal</span>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Maison Vellora. All rights reserved.</span>
+        <span>Paris — Geneva</span>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/collection.js"></script>
+  </body>
+</html>

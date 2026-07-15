@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maison Vellora — Handcrafted Eyewear</title>
+    <meta name="description" content="Maison Vellora — eyewear built from aerospace-grade titanium and hand-ground optical glass, finished by hand in small runs." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles/base.css" />
+    <link rel="stylesheet" href="/src/styles/craft.css" />
+    <link rel="stylesheet" href="/src/styles/backdrops.css" />
+    <style>
+      /* ---------- Hero ---------- */
+
+      .hero {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        padding: 0 48px;
+        overflow: hidden;
+      }
+
+      .hero-copy {
+        grid-column: 1;
+        max-width: 520px;
+        z-index: 2;
+      }
+
+      .hero-title {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-weight: 400;
+        font-size: clamp(64px, 11vw, 172px);
+        line-height: 0.94;
+        margin: 0 0 26px;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+
+      .hero-desc {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 21px;
+        line-height: 1.55;
+        opacity: 0.8;
+        max-width: 420px;
+        margin: 0 0 30px;
+      }
+
+      .hero-visual {
+        grid-column: 2;
+        position: relative;
+        height: 78vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .hero-glow {
+        position: absolute;
+        width: 62vw;
+        max-width: 780px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(166, 130, 90, 0.22) 0%, rgba(12, 11, 10, 0) 68%);
+      }
+
+      .hero-frame-svg {
+        position: relative;
+        width: 92%;
+        max-width: 620px;
+        height: auto;
+      }
+
+      @media (max-width: 900px) {
+        .hero {
+          grid-template-columns: 1fr;
+          padding: 140px 24px 60px;
+          min-height: auto;
+          gap: 60px;
+        }
+        .hero-copy {
+          grid-column: 1;
+          grid-row: 2;
+        }
+        .hero-visual {
+          grid-column: 1;
+          grid-row: 1;
+          height: 44vh;
+        }
+      }
+
+      /* ---------- Collections: two full-bleed, near-full-viewport cinematic panels —
+         the actual routing surface into the rest of the catalog. Each collection gets
+         its own scale moment when scrolled to, not a thumbnail in a contained grid. ---------- */
+
+      .collections-stack {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .collection-tile {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        text-decoration: none;
+        color: var(--text);
+        width: 100%;
+        min-height: 94vh;
+        overflow: hidden;
+      }
+
+      .tile-mood {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* Both moods stay ink/charcoal-based per Atelier Noir's dark-dominant system — the
+         two collections are differentiated only by their glow accent, not by a separate
+         color family: Heritage runs warm brass (aviator, aerospace-metal heritage),
+         Meridian runs a cooler, paler cream glow (contemporary, optical-first). */
+      .tile-mood.mood-heritage {
+        background: radial-gradient(ellipse at 28% 22%, #4a3a26 0%, #241c12 42%, var(--ink) 82%, #000 100%);
+      }
+
+      .tile-mood.mood-meridian {
+        background: radial-gradient(ellipse at 68% 24%, #2c2b28 0%, #171613 42%, var(--ink) 82%, #000 100%);
+      }
+
+      .tile-mood::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.55;
+      }
+
+      .mood-heritage::before {
+        background: radial-gradient(ellipse at 28% 22%, rgba(166, 130, 90, 0.55) 0%, rgba(166, 130, 90, 0) 45%);
+      }
+
+      .mood-meridian::before {
+        background: radial-gradient(ellipse at 68% 24%, rgba(242, 236, 225, 0.28) 0%, rgba(242, 236, 225, 0) 45%);
+      }
+
+      .tile-mood::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(190deg, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.75) 100%);
+        transition: opacity var(--dur-release) var(--ease-out-soft);
+      }
+
+      .collection-tile:hover .tile-mood::after {
+        opacity: 0.85;
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .tile-copy {
+        position: relative;
+        z-index: 2;
+        color: var(--cream);
+        padding: 0 64px 72px;
+        max-width: 760px;
+      }
+
+      .tile-copy .eyebrow {
+        color: var(--brass);
+        opacity: 0.95;
+      }
+
+      .tile-name {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-size: clamp(44px, 7.5vw, 118px);
+        line-height: 0.96;
+        margin: 0 0 18px;
+      }
+
+      .tile-tagline {
+        font-family: "Cormorant Garamond", serif;
+        font-size: clamp(17px, 1.6vw, 22px);
+        opacity: 0.85;
+        margin: 0 0 24px;
+        max-width: 460px;
+      }
+
+      .tile-copy .text-link {
+        color: var(--cream);
+      }
+
+      .tile-copy .text-link .glyph {
+        color: var(--brass);
+      }
+
+      @media (max-width: 900px) {
+        .collection-tile {
+          min-height: 70vh;
+        }
+        .tile-copy {
+          padding: 0 24px 48px;
+        }
+      }
+
+      /* ---------- Configurator CTA ---------- */
+
+      .configurator-cta {
+        padding: 160px 48px;
+        text-align: center;
+      }
+
+      .configurator-cta .eyebrow {
+        justify-content: center;
+        display: flex;
+      }
+
+      .configurator-cta .cta-title {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-weight: 400;
+        font-size: clamp(44px, 6.5vw, 84px);
+        margin: 0 0 26px;
+      }
+
+      .configurator-cta .cta-body {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 19px;
+        line-height: 1.6;
+        opacity: 0.8;
+        max-width: 480px;
+        margin: 0 auto 34px;
+      }
+
+      .configurator-cta .text-link {
+        font-size: 13px;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header" id="site-header">
+      <a class="wordmark" href="/index.html">Maison Vellora</a>
+      <nav class="site-nav">
+        <button type="button" class="nav-trigger" id="nav-collections-trigger" aria-expanded="false" aria-controls="nav-mega-menu">
+          Collections
+        </button>
+        <a href="/collections/all/" id="nav-shop-all">Shop All</a>
+        <a href="#craft">Craft</a>
+        <a href="/configurator.html">Configurator</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <div class="mega-menu" id="nav-mega-menu">
+      <div class="mega-menu-inner"></div>
+    </div>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow reveal">The Heritage Collection</div>
+        <h1 class="hero-title reveal">The Ostrande</h1>
+        <p class="hero-desc reveal">
+          Hand-finished aviator in aerospace-grade titanium, cut with a lowered bridge and a wider brow for a
+          quietly assertive line.
+        </p>
+        <a class="text-link underlined reveal" href="/products/the-ostrande/">
+          View The Ostrande <span class="glyph">→</span>
+        </a>
+      </div>
+      <div class="hero-visual reveal">
+        <div class="hero-glow"></div>
+        <svg class="hero-frame-svg" viewBox="0 0 640 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g stroke="#f2ece1" stroke-width="1.4" opacity="0.85">
+            <path d="M60 150 C60 100 110 78 168 78 C226 78 258 108 258 150 C258 190 226 214 168 214 C110 214 60 192 60 150 Z" />
+            <path d="M382 150 C382 100 432 78 490 78 C548 78 580 108 580 150 C580 190 548 214 490 214 C432 214 382 192 382 150 Z" />
+            <path d="M258 138 C300 108 340 108 382 138" />
+            <path d="M60 150 C40 150 26 146 16 138" />
+            <path d="M580 150 C600 150 614 146 624 138" />
+          </g>
+          <g stroke="#a6825a" stroke-width="1" opacity="0.7">
+            <path d="M168 78 C168 60 178 50 196 48" />
+            <path d="M490 78 C490 60 500 50 518 48" />
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <section class="statement">
+      <div class="eyebrow reveal" style="display: flex; justify-content: center">Shop the Collections</div>
+      <p class="statement-text reveal">Two Lines. <span class="mark">One</span> Idea.</p>
+    </section>
+
+    <section class="collections-stack">
+      <a class="collection-tile reveal" href="/collections/heritage/">
+        <div class="tile-mood mood-heritage"></div>
+        <div class="tile-copy">
+          <div class="eyebrow">Collection I</div>
+          <h3 class="tile-name">The Heritage Collection</h3>
+          <p class="tile-tagline">Aviator lines, aerospace titanium — the original line.</p>
+          <span class="text-link">View Collection <span class="glyph">→</span></span>
+        </div>
+      </a>
+      <a class="collection-tile reveal" href="/collections/meridian/">
+        <div class="tile-mood mood-meridian"></div>
+        <div class="tile-copy">
+          <div class="eyebrow">Collection II</div>
+          <h3 class="tile-name">The Meridian Collection</h3>
+          <p class="tile-tagline">Cleaner lines, cut for clarity — optical-first, near weightless.</p>
+          <span class="text-link">View Collection <span class="glyph">→</span></span>
+        </div>
+      </a>
+    </section>
+
+    <section class="craft light-zone" id="craft">
+      <div class="craft-pin">
+        <div class="section-head craft-head reveal">
+          <div class="eyebrow">Craft</div>
+          <h2 class="section-title">Material as argument</h2>
+        </div>
+
+        <div class="craft-stack">
+          <div class="craft-step">
+            <div class="craft-media media-metal">
+              <div class="craft-caption">Hinge detail — grade 5 titanium</div>
+            </div>
+            <div class="craft-text">
+              <div class="eyebrow">Metal</div>
+              <h3 class="craft-heading">Aerospace-grade titanium</h3>
+              <p class="craft-body">
+                Every frame begins as a solid titanium billet, milled and hand-polished over eleven stages. The
+                alloy is chosen for what it refuses to do: it will not corrode, will not fatigue at the hinge, and
+                will not add weight the face has to carry.
+              </p>
+            </div>
+          </div>
+
+          <div class="craft-step reverse">
+            <div class="craft-media media-lens">
+              <div class="craft-caption">Lens edge — hand-ground optical glass</div>
+            </div>
+            <div class="craft-text">
+              <div class="eyebrow">Lens</div>
+              <h3 class="craft-heading">Hand-ground optical glass</h3>
+              <p class="craft-body">
+                We use mineral glass over polymer for its optical clarity and resistance to scratching, ground and
+                edge-polished by hand to sit flush within the frame without a visible seam.
+              </p>
+            </div>
+          </div>
+
+          <div class="craft-step">
+            <div class="craft-media media-temple">
+              <div class="craft-caption">Temple — spring-loaded barrel hinge</div>
+            </div>
+            <div class="craft-text">
+              <div class="eyebrow">Construction</div>
+              <h3 class="craft-heading">Assembled by hand, in small runs</h3>
+              <p class="craft-body">
+                Each temple is fitted with a spring-loaded barrel hinge and set by a single craftsperson from start
+                to finish. We build in runs of under two hundred, which is slower, and, we think, worth it.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="craft-progress">
+          <span class="craft-progress-dot"></span>
+          <span class="craft-progress-dot"></span>
+          <span class="craft-progress-dot"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="statement">
+      <p class="statement-text reveal">Slower, By Design.</p>
+    </section>
+
+    <section class="configurator-cta reveal">
+      <div class="eyebrow">Made to Order</div>
+      <h2 class="cta-title">Design your own</h2>
+      <p class="cta-body">
+        Choose your metal, your lens, and your finish. Every configuration is rendered in real time and built
+        to order by hand.
+      </p>
+      <a class="text-link underlined" href="/configurator.html">Enter the configurator <span class="glyph">→</span></a>
+    </section>
+
+    <footer class="site-footer" id="contact">
+      <div class="footer-top">
+        <div class="footer-wordmark">Maison Vellora</div>
+        <div class="footer-links">
+          <div class="footer-col">
+            <span class="footer-col-title">Shop</span>
+            <a href="/collections/all/">Shop All</a>
+            <a href="/collections/heritage/">The Heritage Collection</a>
+            <a href="/collections/meridian/">The Meridian Collection</a>
+            <a href="/configurator.html">Configurator</a>
+          </div>
+          <div class="footer-col">
+            <span class="footer-col-title">Company</span>
+            <a href="#craft">Craft</a>
+            <a href="#contact">About</a>
+            <a href="mailto:atelier@maisonvellora.com">Contact</a>
+          </div>
+          <div class="footer-col">
+            <span class="footer-col-title">Legal</span>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Maison Vellora. All rights reserved.</span>
+        <span>Paris — Geneva</span>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/landing.js"></script>
+  </body>
+</html>

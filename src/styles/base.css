@@ -1,0 +1,548 @@
+/* Shared across every page: tokens, resets, header/nav, text-link, section headings,
+   footer, and the pre-JS reveal baseline. Page-specific sections (hero, configurator
+   panel, collection grid, etc.) stay in each page's own <style> block. */
+
+:root {
+  /* Atelier Noir — deep-ink dominant, brass and cream kept genuinely rare, one oxblood
+     accent for the rare "wow" flourish. Ink is the default page surface everywhere now;
+     cream/ivory is the exception (see .light-zone), not the baseline. */
+  --ink: #0c0b0a;
+  --charcoal: #1a1815;
+  --cream: #f2ece1;
+  --brass: #a6825a;
+  --oxblood: #5c2a2a;
+
+  --text: var(--cream);
+  --page-bg: var(--ink);
+  --panel-bg: var(--charcoal);
+  --hairline: rgba(166, 130, 90, 0.32);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-soft: cubic-bezier(0.33, 1, 0.68, 1);
+  --dur-snap: 150ms;
+  --dur-release: 250ms;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background: var(--page-bg);
+  color: var(--text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow-x: hidden;
+}
+
+html.lenis {
+  scroll-behavior: auto;
+}
+
+a {
+  color: inherit;
+}
+
+section {
+  position: relative;
+}
+
+.reveal {
+  opacity: 0;
+}
+
+/* ---------- Light zone: the rare cream/ivory exception (see the Craft section) ----------
+   Ink is the default surface everywhere now; this is the deliberate breathing moment
+   against it, not the baseline — so it's an opt-in class, not a token swap. */
+
+.light-zone {
+  background: var(--cream);
+  color: #1a1815;
+}
+
+.light-zone .eyebrow {
+  color: var(--brass);
+}
+
+/* ---------- Oxblood mark: the one rare accent — a single underline or highlighted word,
+   used sparingly enough that it still reads as an event, not a color in rotation. ---------- */
+
+.mark {
+  color: var(--oxblood);
+}
+
+/* ---------- Header ---------- */
+
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30px 48px;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background var(--dur-release) var(--ease-out-expo), border-color var(--dur-release) var(--ease-out-expo),
+    padding var(--dur-release) var(--ease-out-expo);
+}
+
+.site-header.solid {
+  background: rgba(12, 11, 10, 0.82);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--hairline);
+  padding: 20px 48px;
+}
+
+.wordmark {
+  font-family: "Playfair Display", serif;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text);
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+.site-nav {
+  display: flex;
+  gap: 40px;
+}
+
+.site-nav a,
+.nav-trigger {
+  position: relative;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--text);
+  opacity: 0.65;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: opacity var(--dur-release) var(--ease-out-soft);
+}
+
+.site-nav a::after,
+.nav-trigger::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 1px;
+  background: var(--brass);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur-release) var(--ease-out-soft);
+}
+
+.site-nav a:hover,
+.nav-trigger:hover,
+.nav-trigger.open {
+  opacity: 1;
+  transition-duration: var(--dur-snap);
+  transition-timing-function: var(--ease-out-expo);
+}
+
+.site-nav a:hover::after,
+.nav-trigger:hover::after,
+.nav-trigger.open::after {
+  transform: scaleX(1);
+  transition: transform var(--dur-snap) var(--ease-out-expo);
+}
+
+/* Active state — a persistent version of the same hover underline, so wherever the
+   visitor actually is stays legible without needing to hover anything. Set by nav.js
+   based on the current URL. */
+.site-nav a.active,
+.nav-trigger.active {
+  opacity: 1;
+}
+
+.site-nav a.active::after,
+.nav-trigger.active::after {
+  transform: scaleX(1);
+}
+
+/* ---------- Mega menu: click/tap to open, stays open until explicitly closed (click
+   trigger again, click outside, Escape) — see src/nav.js. Full-width panel under the
+   header rather than a small anchored dropdown, so the exact same markup/behavior works
+   on both desktop and mobile with no separate hamburger pattern needed. ---------- */
+
+.mega-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  background: rgba(26, 24, 21, 0.97);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--hairline);
+  padding: 116px 48px 64px;
+  max-height: 100vh;
+  overflow-y: auto;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px);
+}
+
+/* Opacity/transform are deliberately not animated by CSS here — nav.js drives both the
+   open and close tweens directly via GSAP every frame; a CSS transition on the same
+   properties would re-ease GSAP's already-eased inline values on top of themselves. */
+.mega-menu.open {
+  pointer-events: auto;
+}
+
+.mega-menu-column {
+  display: block;
+}
+
+.mega-menu-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 72px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.mega-menu-collection-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding-bottom: 16px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--hairline);
+  text-decoration: none;
+  color: var(--cream);
+}
+
+.mega-menu-collection-name {
+  font-family: "Playfair Display", serif;
+  font-style: italic;
+  font-size: 23px;
+  transition: color var(--dur-release) var(--ease-out-soft);
+}
+
+.mega-menu-collection-link:hover .mega-menu-collection-name,
+.mega-menu-collection-link.active .mega-menu-collection-name {
+  color: var(--brass);
+  transition-duration: var(--dur-snap);
+}
+
+.mega-menu-view-all {
+  flex: none;
+  font-family: "Inter", sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.mega-menu-products {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mega-menu-product {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  color: var(--cream);
+  opacity: 0.82;
+  transition: opacity var(--dur-release) var(--ease-out-soft);
+}
+
+.mega-menu-product:hover {
+  opacity: 1;
+  transition-duration: var(--dur-snap);
+}
+
+.mega-menu-product-swatch {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.mega-menu-product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mega-menu-product-name {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 16.5px;
+}
+
+.mega-menu-product-price {
+  font-family: "Inter", sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+}
+
+@media (max-width: 720px) {
+  .mega-menu {
+    padding: 96px 24px 48px;
+  }
+  .mega-menu-inner {
+    grid-template-columns: 1fr;
+    gap: 44px;
+  }
+}
+
+@media (max-width: 720px) {
+  .site-header {
+    padding: 22px 24px;
+  }
+  .site-nav {
+    gap: 20px;
+  }
+  .site-nav a,
+  .nav-trigger {
+    font-size: 10.5px;
+  }
+}
+
+/* ---------- Breadcrumb ---------- */
+
+.breadcrumb {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  padding: 34px 0 0 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.breadcrumb a {
+  text-decoration: none;
+  opacity: 0.55;
+  transition: opacity var(--dur-release) var(--ease-out-soft);
+}
+
+.breadcrumb a:hover {
+  opacity: 0.95;
+  transition-duration: var(--dur-snap);
+}
+
+.breadcrumb span.sep {
+  opacity: 0.35;
+}
+
+.breadcrumb span.current {
+  opacity: 0.85;
+}
+
+@media (max-width: 720px) {
+  .breadcrumb {
+    padding: 20px 0 0 24px;
+    font-size: 9.5px;
+  }
+}
+
+/* ---------- Eyebrow / section headings (shared type language) ---------- */
+
+.eyebrow {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin-bottom: 12px;
+}
+
+.section-head {
+  max-width: 640px;
+  margin: 0 auto 90px;
+  padding: 0 48px;
+  text-align: center;
+}
+
+.section-head .eyebrow {
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-family: "Playfair Display", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(38px, 5.5vw, 72px);
+  line-height: 1.02;
+  margin: 0;
+  color: var(--text);
+}
+
+.section-sub {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 18px;
+  line-height: 1.6;
+  opacity: 0.75;
+  margin: 18px auto 0;
+  max-width: 480px;
+}
+
+/* ---------- Text link ---------- */
+
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--text);
+  opacity: 0.75;
+  transition: opacity var(--dur-release) var(--ease-out-soft), gap var(--dur-release) var(--ease-out-soft);
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.text-link:hover {
+  opacity: 1;
+  gap: 13px;
+  transition-duration: var(--dur-snap);
+  transition-timing-function: var(--ease-out-expo);
+}
+
+.text-link .glyph {
+  display: inline-block;
+  color: var(--brass);
+  font-size: 14px;
+  transition: transform var(--dur-release) var(--ease-out-soft);
+}
+
+.text-link:hover .glyph {
+  transform: translateX(2px);
+  transition: transform var(--dur-snap) var(--ease-out-expo);
+}
+
+.text-link.underlined {
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.text-link.underlined::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 32px;
+  height: 1px;
+  background: var(--brass);
+  transition: width var(--dur-release) var(--ease-out-soft);
+}
+
+.text-link.underlined:hover::after {
+  width: 54px;
+  transition: width var(--dur-snap) var(--ease-out-expo);
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  background: var(--charcoal);
+  border-top: 1px solid var(--hairline);
+  padding: 64px 48px 40px;
+}
+
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  max-width: 1280px;
+  margin: 0 auto 48px;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+
+.footer-wordmark {
+  font-family: "Playfair Display", serif;
+  font-size: 17px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.footer-links {
+  display: flex;
+  gap: 64px;
+  flex-wrap: wrap;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer-col-title {
+  font-family: "Inter", sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin-bottom: 4px;
+}
+
+.footer-col a {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity var(--dur-release) var(--ease-out-soft);
+}
+
+.footer-col a:hover {
+  opacity: 1;
+  transition-duration: var(--dur-snap);
+  transition-timing-function: var(--ease-out-expo);
+}
+
+.footer-bottom {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-top: 28px;
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  opacity: 0.45;
+}
+
+@media (max-width: 720px) {
+  .footer-links {
+    gap: 36px;
+  }
+}

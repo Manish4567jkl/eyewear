@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maison Vellora — Product</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles/base.css" />
+    <link rel="stylesheet" href="/src/styles/craft.css" />
+    <style>
+      #page {
+        display: grid;
+        grid-template-columns: 1fr clamp(480px, 34vw, 680px);
+        width: 100vw;
+        height: 100vh;
+      }
+
+      /* ---------- Stage (3D viewport + hero copy) ---------- */
+
+      #stage {
+        position: relative;
+        grid-column: 1;
+        grid-row: 1;
+        overflow: hidden;
+      }
+
+      #app {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      #brand {
+        position: absolute;
+        top: 36px;
+        left: 44px;
+        z-index: 5;
+        font-family: "Playfair Display", serif;
+        font-size: 15px;
+        font-weight: 500;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--text);
+        opacity: 0;
+        user-select: none;
+        text-decoration: none;
+      }
+
+      #stage .breadcrumb {
+        position: absolute;
+        top: 74px;
+        left: 44px;
+        padding: 0;
+        z-index: 5;
+        opacity: 0;
+      }
+
+      #hero {
+        position: absolute;
+        left: 44px;
+        bottom: 56px;
+        z-index: 5;
+        max-width: 640px;
+      }
+
+      #hero .eyebrow {
+        margin-bottom: 10px;
+        opacity: 0;
+      }
+
+      #hero .product-name {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-weight: 400;
+        font-size: clamp(64px, 8vw, 128px);
+        line-height: 0.94;
+        letter-spacing: -0.01em;
+        margin: 0 0 16px;
+        color: var(--text);
+        opacity: 0;
+      }
+
+      #hero .description {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 19px;
+        line-height: 1.5;
+        color: var(--text);
+        opacity: 0;
+        margin: 0 0 18px;
+        max-width: 420px;
+      }
+
+      #hero .cta {
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text);
+        opacity: 0;
+      }
+
+      #hero .cta::after {
+        content: "";
+        display: block;
+        width: 32px;
+        height: 1px;
+        background: var(--brass);
+        margin-top: 10px;
+      }
+
+      /* ---------- Configurator column ---------- */
+
+      #controls {
+        grid-column: 2;
+        grid-row: 1;
+        height: 100vh;
+        box-sizing: border-box;
+        background-color: var(--panel-bg);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-repeat: repeat;
+        background-size: 160px 160px;
+        background-attachment: local;
+        border-left: 1px solid var(--hairline);
+        padding: 64px 56px 44px;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+
+        opacity: 0;
+        transform: translateX(16px);
+        transition: opacity 350ms var(--ease-out-expo), transform 350ms var(--ease-out-expo);
+      }
+
+      #controls.panel-visible {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .backdrop-picker {
+        margin-bottom: 44px;
+      }
+
+      .backdrop-picker-heading {
+        font-family: "Inter", sans-serif;
+        font-size: 10.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text);
+        opacity: 0.5;
+        margin-bottom: 16px;
+      }
+
+      .backdrop-picker-row {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .backdrop-tile-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      .backdrop-tile {
+        width: 44px;
+        height: 44px;
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        opacity: 0.6;
+        transform: scale(0.94);
+        transition: opacity var(--dur-release) var(--ease-out-soft), transform var(--dur-release) var(--ease-out-soft),
+          box-shadow var(--dur-release) var(--ease-out-soft);
+      }
+
+      .backdrop-tile canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .backdrop-tile-wrap:hover .backdrop-tile {
+        opacity: 0.85;
+        transform: scale(1);
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .backdrop-tile-wrap.active .backdrop-tile {
+        opacity: 1;
+        transform: scale(1.08);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45), 0 0 0 2px var(--panel-bg), 0 0 0 3px var(--brass);
+      }
+
+      .backdrop-tile-label {
+        font-family: "Inter", sans-serif;
+        font-size: 9.5px;
+        letter-spacing: 0.04em;
+        color: var(--text);
+        opacity: 0.45;
+        text-align: center;
+        max-width: 60px;
+        transition: opacity var(--dur-release) var(--ease-out-soft);
+      }
+
+      .backdrop-tile-wrap.active .backdrop-tile-label,
+      .backdrop-tile-wrap:hover .backdrop-tile-label {
+        opacity: 0.8;
+      }
+
+      .rail-tabs {
+        display: flex;
+        gap: 34px;
+        flex-wrap: wrap;
+        margin-bottom: 40px;
+        position: relative;
+      }
+
+      .rail-tab {
+        font-family: "Cormorant Garamond", serif;
+        font-weight: 400;
+        font-size: 18px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text);
+        opacity: 0.5;
+        background: none;
+        border: none;
+        padding: 0 0 10px;
+        cursor: pointer;
+        position: relative;
+        transition: opacity var(--dur-release) var(--ease-out-soft);
+      }
+
+      .rail-tab:hover {
+        opacity: 0.75;
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .rail-tab.active {
+        opacity: 1;
+      }
+
+      .rail-tab-indicator {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 1.5px;
+        width: 0;
+        background: var(--brass);
+        pointer-events: none;
+      }
+
+      .rail-heading {
+        font-family: "Cormorant Garamond", serif;
+        font-style: italic;
+        font-size: 27px;
+        color: var(--text);
+        opacity: 0.9;
+        margin-bottom: 28px;
+        min-height: 34px;
+      }
+
+      .rail-filmstrip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .rail-nav {
+        flex: none;
+        width: 28px;
+        height: 168px;
+        border: none;
+        background: none;
+        color: var(--brass);
+        font-family: "Cormorant Garamond", serif;
+        font-size: 26px;
+        cursor: pointer;
+        opacity: 0.45;
+        transition: opacity var(--dur-release) var(--ease-out-soft);
+      }
+
+      .rail-nav:hover {
+        opacity: 0.9;
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .rail-track-wrap {
+        flex: 1;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-mask-image: linear-gradient(
+          to right,
+          transparent 0,
+          black 20px,
+          black calc(100% - 20px),
+          transparent 100%
+        );
+        mask-image: linear-gradient(to right, transparent 0, black 20px, black calc(100% - 20px), transparent 100%);
+        padding: 10px 0 6px;
+        scrollbar-width: none;
+        transition: opacity var(--dur-snap) var(--ease-out-soft);
+      }
+
+      .rail-track-wrap.fading {
+        opacity: 0;
+      }
+
+      .rail-track-wrap::-webkit-scrollbar {
+        display: none;
+      }
+
+      .rail-track {
+        display: flex;
+        align-items: flex-end;
+        gap: 22px;
+        padding: 0 4px;
+        scroll-snap-type: x proximity;
+      }
+
+      .tile-wrap {
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        cursor: pointer;
+        scroll-snap-align: center;
+      }
+
+      .tile {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        position: relative;
+        overflow: hidden;
+        background: var(--panel-bg);
+        box-shadow: 0 14px 24px -14px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
+        opacity: 0.58;
+        transform-style: preserve-3d;
+        transition: width 320ms var(--ease-overshoot), height 320ms var(--ease-overshoot),
+          opacity var(--dur-release) var(--ease-out-soft), box-shadow var(--dur-release) var(--ease-out-soft);
+      }
+
+      .tile canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .tile.pending {
+        background: linear-gradient(110deg, var(--panel-bg) 10%, #4a3b28 30%, var(--panel-bg) 50%);
+        background-size: 220% 100%;
+        animation: swatch-shimmer 1.7s ease-in-out infinite;
+      }
+
+      @keyframes swatch-shimmer {
+        0% {
+          background-position: 180% 0;
+        }
+        100% {
+          background-position: -80% 0;
+        }
+      }
+
+      .tile-underline {
+        width: 22px;
+        height: 1.5px;
+        background: var(--brass);
+        opacity: 0;
+        transform: scaleX(0.4);
+        transition: opacity var(--dur-snap) var(--ease-out-expo), transform 300ms var(--ease-overshoot);
+      }
+
+      .tile-label {
+        font-family: "Inter", sans-serif;
+        font-variant: small-caps;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        color: var(--text);
+        opacity: 0.55;
+        text-align: center;
+        transition: opacity var(--dur-release) var(--ease-out-soft);
+      }
+
+      .tile-wrap:hover .tile {
+        opacity: 0.8;
+        box-shadow: 0 18px 30px -14px rgba(0, 0, 0, 0.55), 0 3px 8px rgba(0, 0, 0, 0.35);
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .tile-wrap.active .tile {
+        width: 168px;
+        height: 168px;
+        opacity: 1;
+        box-shadow: 0 26px 46px -16px rgba(166, 130, 90, 0.45), 0 4px 12px rgba(0, 0, 0, 0.35);
+      }
+
+      .tile-wrap.active:hover .tile {
+        opacity: 1;
+      }
+
+      .tile-wrap.active .tile-underline {
+        opacity: 1;
+        transform: scaleX(1);
+      }
+
+      .tile-wrap.active .tile-label {
+        opacity: 0.9;
+      }
+
+      .stage-picker {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: 22px;
+      }
+
+      .stage-picker-label {
+        font-family: "Inter", sans-serif;
+        font-size: 10.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text);
+        opacity: 0.45;
+      }
+
+      .stage-picker-dots {
+        display: flex;
+        gap: 10px;
+      }
+
+      .stage-dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        padding: 0;
+        cursor: pointer;
+        background: var(--dot-color);
+        border: 1px solid rgba(0, 0, 0, 0.35);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        opacity: 0.7;
+        transition: opacity var(--dur-release) var(--ease-out-soft), transform var(--dur-release) var(--ease-out-soft),
+          box-shadow var(--dur-release) var(--ease-out-soft);
+      }
+
+      .stage-dot:hover {
+        opacity: 0.9;
+        transform: scale(1.12);
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .stage-dot.active {
+        opacity: 1;
+        box-shadow: 0 0 0 2px var(--panel-bg), 0 0 0 3px var(--brass), 0 1px 3px rgba(0, 0, 0, 0.4);
+      }
+
+      .summary {
+        margin-top: auto;
+        padding-top: 36px;
+        border-top: 1px solid var(--hairline);
+      }
+
+      .summary-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 22px;
+      }
+
+      .summary-title {
+        font-family: "Inter", sans-serif;
+        font-size: 10.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text);
+        opacity: 0.55;
+      }
+
+      .summary-ref {
+        font-family: "Cormorant Garamond", serif;
+        font-style: italic;
+        font-size: 13px;
+        letter-spacing: 0.03em;
+        color: var(--brass);
+        opacity: 0.9;
+      }
+
+      .summary-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .summary-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--hairline);
+        font-family: "Inter", sans-serif;
+        color: var(--text);
+      }
+
+      .summary-list li:last-child {
+        border-bottom: none;
+      }
+
+      .summary-list li span:first-child {
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        opacity: 0.5;
+      }
+
+      .summary-list li span:last-child {
+        font-family: "Cormorant Garamond", serif;
+        font-variant: small-caps;
+        font-size: 15px;
+        letter-spacing: 0.03em;
+        opacity: 0.92;
+      }
+
+      .summary-footnote {
+        margin-top: 20px;
+        font-family: "Cormorant Garamond", serif;
+        font-style: italic;
+        font-size: 13px;
+        color: var(--text);
+        opacity: 0.5;
+        text-align: right;
+      }
+
+      @media (max-width: 900px) {
+        #page {
+          grid-template-columns: 1fr;
+          grid-template-rows: 62vh auto;
+          height: auto;
+          min-height: 100vh;
+        }
+
+        #stage {
+          grid-column: 1;
+          grid-row: 1;
+          height: 62vh;
+        }
+
+        #hero {
+          left: 24px;
+          bottom: 28px;
+          max-width: calc(100% - 48px);
+        }
+
+        #hero .product-name {
+          font-size: 40px;
+        }
+
+        #brand {
+          top: 24px;
+          left: 24px;
+          font-size: 13px;
+        }
+
+        #stage .breadcrumb {
+          top: 54px;
+          left: 24px;
+        }
+
+        #controls {
+          grid-column: 1;
+          grid-row: 2;
+          height: auto;
+          border-left: none;
+          border-top: 1px solid var(--hairline);
+          padding: 36px 24px 32px;
+          transform: translateY(16px);
+        }
+
+        #controls.panel-visible {
+          transform: translateY(0);
+        }
+
+        .rail-nav {
+          height: 120px;
+          width: 22px;
+          font-size: 22px;
+        }
+
+        .tile {
+          width: 76px;
+          height: 76px;
+        }
+
+        .tile-wrap.active .tile {
+          width: 120px;
+          height: 120px;
+        }
+      }
+
+      /* ---------- The Details: spec sheet ---------- */
+
+      .details {
+        padding: 130px 48px 150px;
+        max-width: 1040px;
+        margin: 0 auto;
+      }
+
+      .spec-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 80px;
+      }
+
+      .spec-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .spec-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 24px;
+        padding: 17px 0;
+        border-bottom: 1px solid var(--hairline);
+        opacity: 0;
+      }
+
+      .spec-list li:last-child {
+        border-bottom: none;
+      }
+
+      .spec-label {
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text);
+        opacity: 0.5;
+        flex: none;
+      }
+
+      .spec-value {
+        font-family: "Cormorant Garamond", serif;
+        font-variant: small-caps;
+        font-size: 16.5px;
+        letter-spacing: 0.02em;
+        color: var(--text);
+        opacity: 0.92;
+        text-align: right;
+      }
+
+      .details-footnote {
+        margin-top: 40px;
+        font-family: "Cormorant Garamond", serif;
+        font-style: italic;
+        font-size: 14px;
+        color: var(--text);
+        opacity: 0.55;
+        text-align: center;
+      }
+
+      @media (max-width: 900px) {
+        .details {
+          padding: 90px 24px 100px;
+        }
+        .spec-columns {
+          grid-template-columns: 1fr;
+          column-gap: 0;
+        }
+        .spec-columns .spec-list + .spec-list {
+          margin-top: 8px;
+        }
+      }
+
+      /* ---------- 360°: second presentation moment ---------- */
+
+      .rotate-section {
+        padding: 130px 48px 160px;
+      }
+
+      .rotate-stage-wrap {
+        position: relative;
+        max-width: 980px;
+        margin: 60px auto 0;
+        aspect-ratio: 16 / 9;
+        border-radius: 2px;
+        overflow: hidden;
+        background: radial-gradient(circle, var(--panel-bg) 0%, var(--page-bg) 72%);
+        cursor: grab;
+        filter: blur(6px);
+      }
+
+      .rotate-stage-wrap:active {
+        cursor: grabbing;
+      }
+
+      #detail-app {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .rotate-hint {
+        position: absolute;
+        bottom: 22px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text);
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      @media (max-width: 900px) {
+        .rotate-section {
+          padding: 90px 24px 110px;
+        }
+        .rotate-stage-wrap {
+          aspect-ratio: 4 / 3;
+        }
+      }
+
+      /* ---------- Presentation ---------- */
+
+      .presentation {
+        padding: 140px 48px 150px;
+        background: var(--panel-bg);
+      }
+
+      .presentation-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 56px;
+        max-width: 1040px;
+        margin: 60px auto 0;
+      }
+
+      .presentation-item {
+        text-align: center;
+      }
+
+      .presentation-icon {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 22px;
+        color: var(--brass);
+      }
+
+      .presentation-icon svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .presentation-heading {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-size: 20px;
+        margin: 0 0 12px;
+        color: var(--text);
+      }
+
+      .presentation-body {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 16.5px;
+        line-height: 1.6;
+        opacity: 0.78;
+        margin: 0;
+      }
+
+      .keepsake-card {
+        max-width: 380px;
+        margin: 90px auto 0;
+        padding: 40px 34px;
+        text-align: center;
+        background: var(--page-bg);
+        border: 1px solid var(--hairline);
+        position: relative;
+      }
+
+      .keepsake-card::before,
+      .keepsake-card::after {
+        content: "";
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border: 1px solid var(--brass);
+        opacity: 0.6;
+      }
+
+      .keepsake-card::before {
+        top: -1px;
+        left: -1px;
+        border-right: none;
+        border-bottom: none;
+      }
+
+      .keepsake-card::after {
+        bottom: -1px;
+        right: -1px;
+        border-left: none;
+        border-top: none;
+      }
+
+      .keepsake-eyebrow {
+        margin-bottom: 10px;
+      }
+
+      .keepsake-title {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-size: 22px;
+        margin: 0 0 18px;
+        color: var(--text);
+      }
+
+      .keepsake-ref {
+        font-family: "Cormorant Garamond", serif;
+        font-style: italic;
+        font-size: 20px;
+        letter-spacing: 0.04em;
+        color: var(--brass);
+        margin: 0 0 18px;
+      }
+
+      .keepsake-body {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 15.5px;
+        line-height: 1.6;
+        opacity: 0.72;
+        margin: 0;
+      }
+
+      @media (max-width: 900px) {
+        .presentation {
+          padding: 90px 24px 110px;
+        }
+        .presentation-grid {
+          grid-template-columns: 1fr;
+          gap: 44px;
+        }
+      }
+
+      /* ---------- More from the collection ---------- */
+
+      .more-from-collection {
+        padding: 140px 48px 160px;
+      }
+
+      .look-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 40px;
+        max-width: 1100px;
+        margin: 60px auto 0;
+      }
+
+      .look-card {
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        color: var(--text);
+      }
+
+      .look-swatch {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 2px;
+        margin-bottom: 22px;
+        overflow: hidden;
+      }
+
+      .look-swatch::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 50%);
+      }
+
+      .look-name {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        font-size: 22px;
+        margin: 0 0 8px;
+      }
+
+      .look-desc {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 16.5px;
+        line-height: 1.5;
+        opacity: 0.78;
+        margin: 0 0 16px;
+      }
+
+      @media (max-width: 900px) {
+        .more-from-collection {
+          padding: 90px 24px 110px;
+        }
+        .look-grid {
+          grid-template-columns: 1fr;
+          gap: 56px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="page">
+      <div id="stage">
+        <canvas id="app"></canvas>
+        <a id="brand" href="/index.html">Maison Vellora</a>
+        <div class="breadcrumb" id="breadcrumb"></div>
+        <div id="hero">
+          <div class="eyebrow" id="hero-eyebrow"></div>
+          <h1 class="product-name" id="hero-name"></h1>
+          <p class="description" id="hero-description"></p>
+          <div class="cta" id="hero-cta"></div>
+        </div>
+      </div>
+      <aside id="controls"></aside>
+    </div>
+
+    <!-- ================= The Details — spec sheet ================= -->
+    <section class="details" id="details">
+      <div class="section-head reveal">
+        <div class="eyebrow">The Details</div>
+        <h2 class="section-title">Specification</h2>
+      </div>
+      <div class="spec-columns" id="spec-columns"></div>
+      <p class="details-footnote reveal" id="details-footnote"></p>
+    </section>
+
+    <!-- ================= Craft ================= -->
+    <section class="craft" id="craft">
+      <div class="craft-pin">
+        <div class="section-head craft-head reveal">
+          <div class="eyebrow">Craft</div>
+          <h2 class="section-title" id="craft-title">Material as Argument</h2>
+        </div>
+
+        <div class="craft-stack" id="craft-stack"></div>
+
+        <div class="craft-progress" id="craft-progress"></div>
+      </div>
+    </section>
+
+    <!-- ================= 360° / detail view ================= -->
+    <section class="rotate-section" id="rotate">
+      <div class="section-head reveal">
+        <div class="eyebrow">In the Round</div>
+        <h2 class="section-title">Every Angle</h2>
+        <p class="section-sub">Your configuration, rendered larger — drag to turn it in the light.</p>
+      </div>
+      <div class="rotate-stage-wrap reveal">
+        <canvas id="detail-app"></canvas>
+        <div class="rotate-hint">Drag to rotate</div>
+      </div>
+    </section>
+
+    <!-- ================= Presentation / packaging ================= -->
+    <section class="presentation" id="presentation">
+      <div class="section-head reveal">
+        <div class="eyebrow">Presentation</div>
+        <h2 class="section-title">Arrives As It Was Made — By Hand</h2>
+      </div>
+      <div class="presentation-grid">
+        <div class="presentation-item reveal">
+          <div class="presentation-icon">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="4" y="12" width="32" height="20" rx="1.5" />
+              <path d="M4 18 H36" />
+              <path d="M16 12 V9 a4 4 0 0 1 8 0 v3" />
+            </svg>
+          </div>
+          <h3 class="presentation-heading">The Case</h3>
+          <p class="presentation-body">A hinged travel case in waxed canvas and leather, lined in brushed felt cut to the frame's own shape.</p>
+        </div>
+        <div class="presentation-item reveal">
+          <div class="presentation-icon">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M8 6 C8 6 30 6 32 6 C34 6 34 34 32 34 C30 34 8 34 8 34 C6 34 6 20 6 20 C6 20 6 6 8 6 Z" />
+              <path d="M14 14 C18 12 22 12 26 14" />
+              <path d="M14 26 C18 24 22 24 26 26" />
+            </svg>
+          </div>
+          <h3 class="presentation-heading">The Cloth</h3>
+          <p class="presentation-body">A microfibre cleaning cloth, woven with the Maison Vellora mark, sized to travel folded in the case lid.</p>
+        </div>
+        <div class="presentation-item reveal">
+          <div class="presentation-icon">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="6" y="9" width="28" height="22" rx="1" />
+              <path d="M11 16 H29" />
+              <path d="M11 22 H22" />
+            </svg>
+          </div>
+          <h3 class="presentation-heading">The Carte</h3>
+          <p class="presentation-body">A numbered certificate card recording your exact configuration, hand-lettered to match the reference below.</p>
+        </div>
+      </div>
+
+      <div class="keepsake-card reveal">
+        <div class="eyebrow keepsake-eyebrow">Keepsake Carte</div>
+        <h3 class="keepsake-title">Certificate of Configuration</h3>
+        <div class="keepsake-ref" id="keepsake-ref">Ref. MV·0000·X</div>
+        <p class="keepsake-body">
+          Issued with every order — a small paper record of the choices that make this pair yours alone, kept in
+          the case lid long after the frame itself has been broken in.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================= More from the collection ================= -->
+    <section class="more-from-collection" id="more-from-collection">
+      <div class="section-head reveal">
+        <div class="eyebrow" id="more-eyebrow">The Collection</div>
+        <h2 class="section-title" id="more-title">More from the Collection</h2>
+      </div>
+      <div class="look-grid" id="look-grid"></div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="footer-top">
+        <div class="footer-wordmark">Maison Vellora</div>
+        <div class="footer-links">
+          <div class="footer-col">
+            <span class="footer-col-title">Shop</span>
+            <a href="/collections/all/">Shop All</a>
+            <a href="/collections/heritage/">The Heritage Collection</a>
+            <a href="/collections/meridian/">The Meridian Collection</a>
+            <a href="/configurator.html">Configurator</a>
+          </div>
+          <div class="footer-col">
+            <span class="footer-col-title">Company</span>
+            <a href="/index.html#craft">Craft</a>
+            <a href="/index.html#contact">About</a>
+            <a href="mailto:atelier@maisonvellora.com">Contact</a>
+          </div>
+          <div class="footer-col">
+            <span class="footer-col-title">Legal</span>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Maison Vellora. All rights reserved.</span>
+        <span>Paris — Geneva</span>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/pdp.js"></script>
+  </body>
+</html>
