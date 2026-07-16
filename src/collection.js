@@ -1,4 +1,4 @@
-import { gsap, initSmoothScroll, EASE, DUR } from "./motion.js";
+import { gsap, SplitText, initSmoothScroll, EASE, DUR } from "./motion.js";
 import { swatchGradient } from "./swatchGradient.js";
 import { initNav } from "./nav.js";
 import { COLLECTIONS, PRODUCTS, getCollection, getCollectionProducts, formatPrice } from "./data/products.js";
@@ -90,14 +90,17 @@ if (!collection) {
   // a magazine layout, not a repeating grid unit.
   const SIZE_CYCLE = ["size-medium", "size-small", "size-large"];
 
+  // The swatch/name pair carries a view-transition-name matching the PDP's own
+  // #stage/product-name (see pdp.js) so a Chromium browser morphs this exact element
+  // into the PDP hero on click instead of cutting — see view-transitions.css.
   function flagshipHtml(product) {
     return `
-      <div class="flagship-visual" style="background:${swatchGradient(product)}">
+      <div class="flagship-visual" style="background:${swatchGradient(product)}; view-transition-name: product-${product.slug}">
         <span class="flagship-type-tag">${product.type === "optical" ? "Optical" : "Sunglasses"}</span>
       </div>
       <div class="flagship-copy">
         <div class="eyebrow">The Flagship Piece</div>
-        <h2 class="flagship-name">${product.name}</h2>
+        <h2 class="flagship-name" style="view-transition-name: product-name-${product.slug}">${product.name}</h2>
         <p class="flagship-desc">${product.description}</p>
         <p class="flagship-price">From ${formatPrice(product.price)}</p>
         <a class="text-link underlined" href="/products/${product.slug}/">View ${product.name} <span class="glyph">→</span></a>
@@ -107,10 +110,12 @@ if (!collection) {
   function cardHtml(product, sizeClass) {
     return `
       <a class="product-card ${sizeClass}" href="/products/${product.slug}/">
-        <div class="product-swatch" style="background:${swatchGradient(product)}">
+        <div class="product-swatch" style="background:${swatchGradient(product)}; view-transition-name: product-${product.slug}">
           <span class="product-type-tag">${product.type === "optical" ? "Optical" : "Sunglasses"}</span>
+          <span class="product-swatch-veil"><span class="product-swatch-cta">View ${product.name} →</span></span>
+          <span class="product-swatch-curtain"></span>
         </div>
-        <h3 class="product-name">${product.name}</h3>
+        <h3 class="product-name" style="view-transition-name: product-name-${product.slug}">${product.name}</h3>
         <p class="product-desc">${product.description}</p>
         <span class="product-price">From ${formatPrice(product.price)}</span>
         <span class="text-link">View <span class="glyph">→</span></span>
@@ -131,11 +136,37 @@ if (!collection) {
     flagshipEl.style.display = "";
     flagshipEl.style.setProperty("--flagship-accent", tone.accent);
     flagshipEl.innerHTML = flagshipHtml(flagship);
-    gsap.from(flagshipEl.querySelector(".flagship-copy"), {
-      opacity: 0,
-      y: 24,
-      duration: DUR.revealLg,
+
+    // Flagship: a diagonal clip-path wipe on the visual (distinct from Craft's
+    // horizontal media wipe) plus a word-by-word title reveal, both scroll-triggered
+    // rather than firing flat on load — the editorial "opener" moment for this page.
+    const flagshipVisual = flagshipEl.querySelector(".flagship-visual");
+    gsap.set(flagshipVisual, { clipPath: "polygon(0% 0%, 0% 0%, -25% 100%, -45% 100%)" });
+    gsap.to(flagshipVisual, {
+      clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
+      duration: 1.1,
       ease: EASE.entrance,
+      scrollTrigger: { trigger: flagshipEl, start: "top 85%" },
+    });
+
+    const flagshipNameSplit = SplitText.create(flagshipEl.querySelector(".flagship-name"), { type: "words" });
+    gsap.set(flagshipNameSplit.words, { opacity: 0, yPercent: 70 });
+    gsap.to(flagshipNameSplit.words, {
+      opacity: 1,
+      yPercent: 0,
+      duration: 0.6,
+      stagger: 0.05,
+      ease: EASE.entrance,
+      scrollTrigger: { trigger: flagshipEl, start: "top 85%" },
+    });
+
+    gsap.from(flagshipEl.querySelectorAll(".eyebrow, .flagship-desc, .flagship-price, .flagship-copy .text-link"), {
+      opacity: 0,
+      y: 16,
+      stagger: 0.05,
+      duration: DUR.reveal,
+      ease: EASE.entrance,
+      scrollTrigger: { trigger: flagshipEl, start: "top 85%" },
     });
 
     // A collection with only one product (its flagship) has nothing left for the
@@ -149,12 +180,22 @@ if (!collection) {
     gridSectionEl.style.display = "";
     gridEl.innerHTML = rest.map((product, i) => cardHtml(product, SIZE_CYCLE[i % SIZE_CYCLE.length])).join("");
 
-    gsap.from(gridEl.querySelectorAll(".product-card"), {
-      opacity: 0,
-      y: 30,
-      stagger: 0.06,
-      duration: DUR.reveal,
-      ease: EASE.entrance,
+    // Grid: a mask/curtain reveal per card (an opaque panel sliding away, not a
+    // clip-path wipe) — each card triggers independently as it scrolls into view, so
+    // the reveal reads as discovery rather than one big stagger dumped on load.
+    const cards = gridEl.querySelectorAll(".product-card");
+    gsap.set(cards, { opacity: 0, y: 22 });
+    gsap.set(gridEl.querySelectorAll(".product-swatch-curtain"), { scaleY: 1 });
+
+    cards.forEach((card) => {
+      gsap
+        .timeline({ scrollTrigger: { trigger: card, start: "top 88%" } })
+        .to(card, { opacity: 1, y: 0, duration: DUR.reveal, ease: EASE.entrance })
+        .to(
+          card.querySelector(".product-swatch-curtain"),
+          { scaleY: 0, duration: 0.55, ease: EASE.entrance },
+          "-=0.3",
+        );
     });
   }
 

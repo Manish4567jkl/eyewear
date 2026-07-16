@@ -13,6 +13,9 @@
   --mv-cover-bg: oklch(0.13 0.04 25);
   --mv-collection-bg: oklch(0.95 0.015 80);
   --mv-atelier-accent: oklch(0.72 0.13 80);
+  --mv-materials-bg: oklch(0.94 0.02 85);
+  --mv-wearer-bg: oklch(0.22 0.08 30);
+  --mv-manifesto-bg: oklch(0.1 0.02 30);
 }
 
 * {
@@ -276,6 +279,21 @@ a, button {
   color: var(--mv-ink);
 }
 
+.mv-page--materials {
+  background: var(--mv-materials-bg);
+  color: var(--mv-ink);
+}
+
+.mv-page--wearer {
+  background: var(--mv-wearer-bg);
+  color: var(--mv-paper);
+}
+
+.mv-page--manifesto {
+  background: var(--mv-manifesto-bg);
+  color: var(--mv-paper);
+}
+
 .mv-plate-label {
   font-family: "Space Mono", monospace;
   font-size: 10px;
@@ -290,7 +308,7 @@ a, button {
   height: 100%;
   padding: 8vw 6%;
   display: grid;
-  grid-template-columns: 7fr 5fr;
+  grid-template-columns: 6fr 6fr;
   gap: 40px;
   align-items: end;
 }
@@ -322,7 +340,19 @@ a, button {
 
 .mv-cover-plate {
   position: relative;
-  aspect-ratio: 4 / 5;
+  /* Wider than the mockup's 4/5 — at 4/5 the box's height (capped to the row, see
+     below) computed a width well short of the column, leaving visible gaps on both
+     sides. 1/1 uses that same height but fills the column much more fully. */
+  aspect-ratio: 1 / 1;
+  /* Sizing from width alone lets this overflow above the fold on a wide-but-short
+     viewport (the ratio can compute taller than the row actually has room for).
+     Driving height from the row (already capped to .mv-cover's available space) and
+     letting width follow the ratio — capped by max-width so it can't spill into the
+     text column either — makes it shrink to fit whichever axis is tighter. */
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  justify-self: end;
   border: 1px solid oklch(0.97 0.01 85 / 0.25);
   overflow: hidden;
 }
@@ -333,19 +363,36 @@ a, button {
   display: block;
 }
 
+/* Both the Cover and Atelier plate boxes are flat placeholder art in the
+   finalized mockup (no photo behind the label), so the caption is plain
+   centered text with no scrim — not a bottom-pinned gradient bar. */
 .mv-plate-caption {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 14px 16px;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
   font-family: "Space Mono", monospace;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.08em;
+  line-height: 1.7;
   text-align: center;
   opacity: 0.7;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.28), transparent);
   pointer-events: none;
+}
+
+.mv-atelier-plate .mv-plate-caption {
+  font-size: 10px;
+  letter-spacing: normal;
+  line-height: normal;
+  padding: 16px;
+}
+
+/* Dead-center collides with the live 3D frame's bridge — sit a bit lower instead. */
+.mv-cover-plate .mv-plate-caption {
+  align-items: flex-end;
+  padding-bottom: 16%;
 }
 
 /* ---------- Contents ---------- */
@@ -423,7 +470,7 @@ a, button {
 
 .mv-configurator-body {
   display: grid;
-  grid-template-columns: 5fr 7fr;
+  grid-template-columns: 4fr 8fr;
   gap: 48px;
   flex: 1;
   min-height: 0;
@@ -433,57 +480,73 @@ a, button {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  scrollbar-width: none;
+  margin-top: 28px;
 }
 
-.mv-product-tabs {
+.mv-configurator-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.mv-room-tabs {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
-.mv-product-tab {
+.mv-room-tab {
   display: flex;
   align-items: baseline;
-  gap: 14px;
-  padding: 7px 0;
-  border-bottom: 1px solid oklch(0.18 0.01 40 / 0.15);
+  gap: 10px;
+  padding: 3px 0;
   text-align: left;
   white-space: nowrap;
-  color: oklch(0.18 0.01 40 / 0.45);
+  color: oklch(0.18 0.01 40 / 0.4);
 }
 
-.mv-product-tab.is-active {
+.mv-room-tab-numeral {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 19px;
+}
+
+.mv-room-tab-name {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 22px;
+}
+
+.mv-room-tab.is-active {
   color: var(--mv-accent);
 }
 
-.mv-product-tab-numeral {
+.mv-room-tab.is-active .mv-room-tab-name {
+  font-weight: 500;
+}
+
+.mv-room-desc {
   font-family: "Bodoni Moda", serif;
   font-style: italic;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.45;
+  opacity: 0.55;
+  max-width: 340px;
+  margin: 12px 0 22px;
 }
 
-.mv-product-tab-name {
-  font-size: 12px;
-}
-
-.mv-product-desc {
-  font-size: 11px;
-  line-height: 1.4;
-  opacity: 0.65;
-  max-width: 280px;
-  margin: 10px 0 16px;
-}
-
-.mv-swatch-group {
-  margin-bottom: 14px;
+.mv-swatch-cols {
+  display: flex;
+  gap: 48px;
+  margin-bottom: 22px;
 }
 
 .mv-swatch-group-label {
   font-family: "Space Mono", monospace;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   opacity: 0.5;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .mv-swatch-row {
@@ -501,40 +564,89 @@ a, button {
 
 .mv-swatch-dot {
   display: block;
-  width: 17px;
-  height: 17px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   box-shadow: 0 0 0 1px oklch(0.18 0.01 40 / 0.2);
+  transform: scale(1);
+  transition: box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .mv-swatch.is-active .mv-swatch-dot {
   box-shadow: 0 0 0 2px var(--mv-paper), 0 0 0 3px var(--mv-ink);
+  transform: scale(1.1);
+}
+
+.mv-swatch--tint.is-active .mv-swatch-dot {
+  box-shadow: 0 0 0 2px var(--mv-paper), 0 0 0 3px var(--mv-accent);
+}
+
+.mv-mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 20px;
+}
+
+.mv-mode {
+  font-family: "Archivo", sans-serif;
+  font-size: 16px;
+  text-align: left;
+  color: oklch(0.18 0.01 40 / 0.4);
+}
+
+.mv-mode.is-active {
+  color: var(--mv-ink);
+}
+
+.mv-mode.is-active::before {
+  content: "— ";
+}
+
+.mv-angles {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.mv-angles-label {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  opacity: 0.45;
+  text-transform: uppercase;
+}
+
+.mv-angle {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 17px;
+  color: oklch(0.18 0.01 40 / 0.45);
+  border-bottom: 1px solid transparent;
+}
+
+.mv-angle.is-active {
+  color: var(--mv-accent);
+  border-bottom-color: var(--mv-accent);
 }
 
 .mv-wall-label {
   border-top: 1px solid oklch(0.18 0.01 40 / 0.18);
-  padding-top: 10px;
-}
-
-.mv-wall-label-title {
-  font-family: "Space Mono", monospace;
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  opacity: 0.5;
-  margin-bottom: 4px;
+  padding-top: 14px;
 }
 
 .mv-wall-label-readout {
-  font-size: 11px;
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 19px;
   line-height: 1.4;
 }
 
 .mv-wall-label-cta {
   display: inline-block;
-  margin-top: 10px;
+  margin-top: 12px;
   font-family: "Space Mono", monospace;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--mv-accent);
@@ -550,7 +662,8 @@ a, button {
 
 .mv-viewer {
   position: relative;
-  aspect-ratio: 5 / 4;
+  flex: 1;
+  min-height: 0;
   border: 1px solid oklch(0.18 0.01 40 / 0.3);
   transform-style: preserve-3d;
   transition: transform 0.15s ease-out, box-shadow 0.3s ease;
@@ -563,66 +676,19 @@ a, button {
   display: block;
 }
 
-.mv-viewer-label {
-  position: absolute;
-  top: 12px;
-  left: 14px;
+.mv-viewer-caption {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.mv-viewer-label,
+.mv-viewer-plate {
   font-family: "Space Mono", monospace;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-.mv-configurator-modes {
-  display: flex;
-  gap: 24px;
-  margin-top: 16px;
-  border-top: 1px solid oklch(0.18 0.01 40 / 0.15);
-  padding-top: 10px;
-}
-
-.mv-mode {
-  font-family: "Space Mono", monospace;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: oklch(0.18 0.01 40 / 0.45);
-  border-bottom: 1px solid transparent;
-  padding-bottom: 3px;
-}
-
-.mv-mode.is-active {
-  color: var(--mv-ink);
-  border-bottom-color: var(--mv-accent);
-}
-
-.mv-angles {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  margin-top: 14px;
-}
-
-.mv-angles-label {
-  font-family: "Space Mono", monospace;
-  font-size: 9px;
-  opacity: 0.45;
-  text-transform: uppercase;
-}
-
-.mv-angle {
-  font-family: "Bodoni Moda", serif;
-  font-style: italic;
-  font-size: 13px;
-  color: oklch(0.18 0.01 40 / 0.45);
-  border-bottom: 1px solid transparent;
-}
-
-.mv-angle.is-active {
-  color: var(--mv-accent);
-  border-bottom-color: var(--mv-accent);
+  opacity: 0.6;
 }
 
 /* ---------- Collection ---------- */
@@ -664,6 +730,7 @@ a, button {
 }
 
 .mv-plate-media {
+  position: relative;
   aspect-ratio: 4 / 3;
   border: 1px solid oklch(0.18 0.01 40 / 0.25);
   display: flex;
@@ -671,6 +738,41 @@ a, button {
   justify-content: center;
   padding: 12px;
   text-align: center;
+  overflow: hidden;
+  transform: scale(1);
+  transition: transform var(--dur-release, 250ms) ease;
+}
+
+.mv-plate:hover .mv-plate-media {
+  transform: scale(1.03);
+  transition-duration: 150ms;
+}
+
+.mv-plate-veil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 14px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 55%);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 250ms ease, transform 250ms ease;
+}
+
+.mv-plate:hover .mv-plate-veil {
+  opacity: 1;
+  transform: translateY(0);
+  transition-duration: 150ms;
+}
+
+.mv-plate-cta {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: oklch(0.97 0.01 85);
 }
 
 .mv-plate-fig {
@@ -722,6 +824,13 @@ a, button {
 .mv-atelier-plate {
   position: relative;
   aspect-ratio: 5 / 4;
+  /* Same fix as .mv-cover-plate: derive size from whichever axis (row height vs.
+     column width) is tighter, instead of always sizing off width and risking a
+     vertical overflow on a wide-but-short viewport. */
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  justify-self: center;
   border: 1px solid oklch(0.97 0.01 85 / 0.25);
   overflow: hidden;
 }
@@ -761,6 +870,457 @@ a, button {
   opacity: 0.85;
   max-width: 340px;
   margin: 20px 0 0;
+}
+
+/* ---------- Corner registration marks (Materials / Wearer / Manifesto) ---------- */
+
+.mv-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-style: solid;
+  border-width: 0;
+  border-color: oklch(0.18 0.01 40 / 0.4);
+  pointer-events: none;
+}
+
+.mv-corner--pale {
+  border-color: oklch(0.97 0.01 85 / 0.35);
+}
+
+.mv-corner--tl {
+  top: 3%;
+  left: 3%;
+  border-left-width: 1px;
+  border-top-width: 1px;
+}
+
+.mv-corner--tr {
+  top: 3%;
+  right: 3%;
+  border-right-width: 1px;
+  border-top-width: 1px;
+}
+
+.mv-corner--bl {
+  bottom: 3%;
+  left: 3%;
+  border-left-width: 1px;
+  border-bottom-width: 1px;
+}
+
+.mv-corner--br {
+  bottom: 3%;
+  right: 3%;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+
+/* ---------- Materials ---------- */
+
+.mv-materials {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 6vw 6% 8vw;
+  overflow: hidden;
+}
+
+.mv-materials-spec-label {
+  position: absolute;
+  top: 6vw;
+  bottom: 8vw;
+  left: 1.5%;
+  writing-mode: vertical-rl;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  opacity: 0.35;
+}
+
+.mv-materials-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  margin-left: 5%;
+  align-items: start;
+}
+
+.mv-materials-title {
+  font-family: "Bodoni Moda", serif;
+  font-size: clamp(40px, 5.2vw, 76px);
+  line-height: 0.95;
+  margin: 14px 0 12px;
+}
+
+.mv-materials-sub {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.6;
+  max-width: 320px;
+  margin: 0;
+}
+
+.mv-materials-table {
+  border-top: 1px solid var(--mv-ink);
+  padding-top: 4px;
+}
+
+.mv-materials-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.3fr 1fr;
+  align-items: baseline;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid oklch(0.18 0.01 40 / 0.18);
+}
+
+.mv-materials-row-name {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 20px;
+}
+
+.mv-materials-row-meta {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  opacity: 0.55;
+}
+
+.mv-materials-row-meta.is-right {
+  text-align: right;
+}
+
+.mv-materials-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.mv-materials-reg {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.mv-materials-reg-label {
+  font-family: "Space Mono", monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  opacity: 0.4;
+  margin-right: 4px;
+}
+
+.mv-materials-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+}
+
+.mv-materials-swatch--outline {
+  border: 1px solid oklch(0.18 0.01 40 / 0.4);
+}
+
+.mv-materials-swatch--pale.mv-materials-swatch--outline {
+  border-color: oklch(0.97 0.01 85 / 0.4);
+}
+
+.mv-materials-stamp {
+  border: 2px double oklch(0.4 0.16 25 / 0.7);
+  padding: 8px 16px;
+  transform: rotate(-5deg);
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--mv-accent);
+  white-space: nowrap;
+}
+
+.mv-materials-marquee {
+  position: absolute;
+  bottom: 2vw;
+  left: 5%;
+  right: 5%;
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 1px solid oklch(0.18 0.01 40 / 0.25);
+  padding-top: 14px;
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+}
+
+.mv-materials-marquee span {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(28px, 4.2vw, 60px);
+  color: oklch(0.18 0.01 40 / 0.12);
+  letter-spacing: 0.01em;
+}
+
+/* ---------- The Wearer ---------- */
+
+.mv-wearer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.mv-wearer-label {
+  position: absolute;
+  top: 9%;
+  left: 6%;
+}
+
+.mv-wearer-tabs {
+  position: absolute;
+  top: 20%;
+  left: 6%;
+  display: flex;
+  gap: 28px;
+}
+
+.mv-wearer-tab {
+  text-align: left;
+  color: oklch(0.97 0.01 85 / 0.4);
+}
+
+.mv-wearer-tab-numeral {
+  display: block;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  margin-bottom: 4px;
+}
+
+.mv-wearer-tab-name {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 15px;
+}
+
+.mv-wearer-tab.is-active {
+  color: var(--mv-atelier-accent);
+}
+
+.mv-wearer-tab.is-active .mv-wearer-tab-name {
+  font-size: 19px;
+}
+
+.mv-wearer-quote {
+  position: absolute;
+  top: 36%;
+  left: 6%;
+  max-width: 54%;
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(24px, 3.2vw, 44px);
+  line-height: 1.15;
+  margin: 0;
+}
+
+.mv-wearer-bio {
+  position: absolute;
+  top: 66%;
+  left: 6%;
+  max-width: 340px;
+  font-family: "Archivo", sans-serif;
+  font-size: 13px;
+  line-height: 1.7;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.mv-wearer-rec {
+  position: absolute;
+  bottom: 9%;
+  left: 6%;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--mv-atelier-accent);
+}
+
+.mv-wearer-image {
+  position: absolute;
+  top: 16%;
+  right: 6%;
+  width: 28%;
+  aspect-ratio: 3 / 4;
+  transform: rotate(4deg);
+  background: repeating-linear-gradient(
+    125deg,
+    oklch(0.3 0.05 30),
+    oklch(0.3 0.05 30) 16px,
+    oklch(0.25 0.04 28) 16px,
+    oklch(0.25 0.04 28) 32px
+  );
+  box-shadow: 0 30px 60px -25px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  text-align: center;
+}
+
+.mv-wearer-image-caption {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: oklch(0.97 0.01 85 / 0.75);
+}
+
+.mv-wearer-no {
+  position: absolute;
+  bottom: 12%;
+  right: 8%;
+  text-align: right;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  opacity: 0.55;
+}
+
+.mv-wearer-rule {
+  position: absolute;
+  bottom: 16%;
+  right: 8%;
+  width: 110px;
+  height: 1px;
+  background: oklch(0.97 0.01 85 / 0.4);
+}
+
+/* ---------- Manifesto ---------- */
+
+.mv-manifesto {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.mv-manifesto-watermark {
+  position: absolute;
+  bottom: -16%;
+  right: -6%;
+  font-family: "Bodoni Moda", serif;
+  font-size: clamp(280px, 40vw, 540px);
+  line-height: 0.8;
+  color: transparent;
+  -webkit-text-stroke: 1px oklch(0.97 0.01 85 / 0.3);
+  pointer-events: none;
+}
+
+.mv-manifesto-label {
+  position: absolute;
+  top: 8%;
+  left: 6%;
+}
+
+.mv-manifesto-issue {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 4%;
+  writing-mode: vertical-rl;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  opacity: 0.4;
+  padding: 8vw 0;
+}
+
+.mv-manifesto-prev,
+.mv-manifesto-next {
+  position: absolute;
+  top: 34%;
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 20px;
+  opacity: 0.6;
+}
+
+.mv-manifesto-prev {
+  left: 6%;
+}
+
+.mv-manifesto-next {
+  right: 6%;
+}
+
+.mv-manifesto-counter {
+  position: absolute;
+  top: 34%;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  opacity: 0.45;
+}
+
+.mv-manifesto-text {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  transform: translate(-50%, 0) rotate(-3deg);
+  width: 70%;
+  text-align: center;
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(30px, 5.4vw, 72px);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.mv-manifesto-dots {
+  position: absolute;
+  bottom: 22%;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.mv-manifesto-dot {
+  height: 6px;
+  width: 8px;
+  background: var(--mv-paper);
+  opacity: 0.35;
+  transition: all 0.3s ease;
+}
+
+.mv-manifesto-dot.is-active {
+  width: 22px;
+  opacity: 1;
+}
+
+.mv-manifesto-gloss {
+  position: absolute;
+  bottom: 8%;
+  left: 6%;
+  max-width: 280px;
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.4;
+  color: var(--mv-atelier-accent);
+  margin: 0;
+}
+
+.mv-manifesto-reg {
+  position: absolute;
+  bottom: 8%;
+  right: 9%;
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 /* ---------- Colophon ---------- */
@@ -922,11 +1482,26 @@ a, button {
     align-items: start;
     gap: 28px;
     overflow-y: auto;
+    scrollbar-width: none;
     padding-top: 22vw;
+  }
+
+  .mv-cover::-webkit-scrollbar,
+  .mv-contents::-webkit-scrollbar,
+  .mv-atelier::-webkit-scrollbar {
+    display: none;
   }
 
   .mv-cover {
     padding-top: 10vw;
+  }
+
+  .mv-cover-plate,
+  .mv-atelier-plate {
+    height: auto;
+    width: 100%;
+    max-width: none;
+    justify-self: stretch;
   }
 
   .mv-cover-plate {
@@ -936,6 +1511,11 @@ a, button {
   .mv-configurator-body {
     grid-template-columns: 1fr;
     overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .mv-configurator-body::-webkit-scrollbar {
+    display: none;
   }
 
   .mv-collection-grid {
@@ -949,6 +1529,140 @@ a, button {
 
   .mv-topbar {
     padding: 20px 6%;
+  }
+
+  /* Materials, The Wearer, and Manifesto are absolutely positioned per the
+     finalized mockup on desktop; below 900px there isn't room for that
+     layered composition, so each falls back to a plain stacked flow. */
+  .mv-materials {
+    height: auto;
+    min-height: 100%;
+    padding: 22vw 6% 12vw;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .mv-materials::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mv-materials-spec-label {
+    display: none;
+  }
+
+  .mv-materials-grid {
+    grid-template-columns: 1fr;
+    margin-left: 0;
+    gap: 32px;
+  }
+
+  .mv-materials-marquee {
+    display: none;
+  }
+
+  .mv-wearer {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding: 22vw 6% 12vw;
+  }
+
+  .mv-wearer::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mv-wearer-label,
+  .mv-wearer-tabs,
+  .mv-wearer-quote,
+  .mv-wearer-bio,
+  .mv-wearer-rec,
+  .mv-wearer-image,
+  .mv-wearer-no,
+  .mv-wearer-rule {
+    position: static;
+    max-width: none;
+    width: auto;
+    transform: none;
+  }
+
+  .mv-wearer-tabs {
+    margin: 16px 0 24px;
+  }
+
+  .mv-wearer-quote {
+    margin: 0 0 20px;
+  }
+
+  .mv-wearer-bio {
+    margin: 0 0 20px;
+  }
+
+  .mv-wearer-image {
+    width: 60%;
+    aspect-ratio: 16 / 9;
+    margin: 20px 0;
+  }
+
+  .mv-wearer-rule {
+    display: none;
+  }
+
+  .mv-wearer-no {
+    text-align: left;
+    margin-top: 10px;
+  }
+
+  .mv-manifesto {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding: 22vw 6% 12vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+  }
+
+  .mv-manifesto::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mv-manifesto-watermark,
+  .mv-manifesto-issue {
+    display: none;
+  }
+
+  .mv-manifesto-label {
+    position: static;
+    margin-bottom: 40px;
+  }
+
+  .mv-manifesto-prev,
+  .mv-manifesto-next,
+  .mv-manifesto-counter,
+  .mv-manifesto-text,
+  .mv-manifesto-dots,
+  .mv-manifesto-gloss,
+  .mv-manifesto-reg {
+    position: static;
+    width: auto;
+    max-width: 100%;
+    transform: none;
+  }
+
+  .mv-manifesto-text {
+    margin: 20px 0;
+  }
+
+  .mv-manifesto-dots {
+    margin: 0 0 24px;
+  }
+
+  .mv-manifesto-reg {
+    margin-top: 24px;
   }
 }
 

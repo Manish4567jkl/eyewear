@@ -3,11 +3,10 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { loadModel } from "./loader.js";
 import { logSceneStructure } from "./sceneInspector.js";
 import { createFrameMaterial, FRAME_PRESET_NAMES, getFramePresetSwatch } from "./frameMaterial.js";
-import { createLensMaterial, LENS_PRESET_NAMES } from "./lensMaterial.js";
+import { createLensMaterial, LENS_PRESET_NAMES, getLensPresetSwatch } from "./lensMaterial.js";
 import { createTextMaterial, TEXT_PRESET_NAMES, getTextPresetSwatch } from "./textMaterial.js";
-import { createAcetateMaterial, ACETATE_PRESET_NAMES } from "./acetateMaterial.js";
+import { createAcetateMaterial, ACETATE_PRESET_NAMES, getAcetatePresetSwatch } from "./acetateMaterial.js";
 import { classifyMesh } from "./meshCategoryMap.js";
-import { swatchGradient } from "./swatchGradient.js";
 import { loadStudioEnvironment, createShadowCatcherGround } from "./environment.js";
 import {
   setSwatchEnvironment,
@@ -18,16 +17,8 @@ import {
   getActiveStageBackground,
 } from "./swatchRenderer.js";
 import { createBackdrop, BACKDROP_PRESETS, getBackdropThumbnail } from "./backdrop.js";
-import { gsap, SplitText, initSmoothScroll, EASE, DUR } from "./motion.js";
-import { initCraftSequence, renderCraftSteps } from "./craftSequence.js";
-import { initBackgroundCrossfade } from "./bgCrossfade.js";
-import {
-  getProduct,
-  getCollection,
-  getSiblingProducts,
-  formatPrice,
-  DEFAULT_CRAFT_STEPS,
-} from "./data/products.js";
+import { gsap, crossfadeText, EASE, DUR } from "./motion.js";
+import { getProduct, getCollection } from "./data/products.js";
 
 const DEFAULT_MODEL_URL = "/models/aviator-glass3.glb";
 
@@ -54,58 +45,22 @@ if (!product) {
 const collection = getCollection(product.collection);
 document.title = `Maison Vellora — ${product.name}`;
 
+// Shared-element continuity: matches the swatch view-transition-name set on the
+// collection grid card and home's collection plate (see collection.js/home.js) so a
+// Chromium browser morphs that exact card into this stage on click — see
+// view-transitions.css for the timing/easing this pairs with.
+document.querySelector("#stage").style.viewTransitionName = `product-${product.slug}`;
+
 // Acetate products load a different model and go through a different material/rail
 // pipeline entirely — see acetateMaterial.js and the mesh classification below.
 const isAcetate = product.frameConstruction === "acetate";
 const MODEL_URL = product.model ?? DEFAULT_MODEL_URL;
 
-// ---------- Breadcrumb + hero copy, from data ----------
+// ---------- Breadcrumb, from data ----------
 document.querySelector("#breadcrumb").innerHTML = `
   <a href="/index.html">Home</a><span class="sep">/</span>
   <a href="/collections/${collection.slug}/">${collection.name}</a><span class="sep">/</span>
   <span class="current">${product.name}</span>`;
-
-document.querySelector("#hero-eyebrow").textContent = collection.eyebrow;
-document.querySelector("#hero-name").textContent = product.name;
-document.querySelector("#hero-description").textContent = product.description;
-document.querySelector("#hero-cta").textContent = `Configure your own — from ${formatPrice(product.price)}`;
-
-// ---------- Spec sheet, from data ----------
-document.querySelector("#spec-columns").innerHTML = product.specs
-  .map(
-    (column) =>
-      `<ul class="spec-list">${column
-        .map((row) => `<li><span class="spec-label">${row.label}</span><span class="spec-value">${row.value}</span></li>`)
-        .join("")}</ul>`,
-  )
-  .join("");
-
-document.querySelector("#details-footnote").textContent =
-  "Hand-finished in a small atelier outside Geneva — measurements vary by a millimeter, as hand work does.";
-
-// ---------- Craft: bespoke story for the flagship, shared brand story otherwise ----------
-const craftSteps = product.craft ?? DEFAULT_CRAFT_STEPS;
-document.querySelector("#craft-title").textContent = product.craft
-  ? `The Making of ${product.name}`
-  : "Material as Argument";
-renderCraftSteps(document.querySelector("#craft-stack"), craftSteps);
-
-// ---------- More from the collection ----------
-const siblings = getSiblingProducts(product, 3);
-document.querySelector("#more-eyebrow").textContent = collection.eyebrow;
-document.querySelector("#more-title").textContent = `More from ${collection.name}`;
-document.querySelector("#look-grid").innerHTML = siblings
-  .map(
-    (sib) => `
-    <a class="look-card reveal" href="/products/${sib.slug}/">
-      <div class="look-swatch" style="background:${swatchGradient(sib)}"></div>
-      <h3 class="look-name">${sib.name}</h3>
-      <p class="look-desc">${sib.description}</p>
-      <span class="text-link">View <span class="glyph">→</span></span>
-    </a>`,
-  )
-  .join("");
-if (siblings.length === 0) document.querySelector("#more-from-collection").style.display = "none";
 
 // ==========================================================================
 // Below this point: the exact same 3D configurator/render pipeline the original
@@ -147,59 +102,8 @@ function updateStageSize() {
 updateStageSize();
 new ResizeObserver(updateStageSize).observe(stageEl);
 
-const detailCanvas = document.querySelector("#detail-app");
-const detailStageEl = document.querySelector(".rotate-stage-wrap");
-
-let detailRenderer = null;
-let detailCamera = null;
-let detailControls = null;
-
-if (detailCanvas && detailStageEl) {
-  detailRenderer = new THREE.WebGLRenderer({ canvas: detailCanvas, antialias: true, alpha: true });
-  detailRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  detailRenderer.outputColorSpace = THREE.SRGBColorSpace;
-  detailRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-  detailRenderer.toneMappingExposure = 1.15;
-  detailRenderer.shadowMap.enabled = true;
-  detailRenderer.shadowMap.type = THREE.VSMShadowMap;
-
-  detailCamera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
-  detailCamera.position.set(0.3, 0.15, 0.42);
-
-  detailControls = new OrbitControls(detailCamera, detailRenderer.domElement);
-  detailControls.enableDamping = true;
-  detailControls.enablePan = false;
-  detailControls.autoRotate = true;
-  detailControls.autoRotateSpeed = 2.4;
-  detailControls.target.set(0, 0, 0);
-  detailControls.minDistance = 0.01;
-  detailControls.maxDistance = 100;
-
-  detailControls.addEventListener("start", () => {
-    detailControls.autoRotate = false;
-  });
-  detailControls.addEventListener("end", () => {
-    detailControls.autoRotate = true;
-  });
-
-  function updateDetailStageSize() {
-    const w = detailStageEl.clientWidth;
-    const h = detailStageEl.clientHeight;
-    detailRenderer.setSize(w, h);
-    detailCamera.aspect = w / h;
-    detailCamera.updateProjectionMatrix();
-  }
-
-  updateDetailStageSize();
-  new ResizeObserver(updateDetailStageSize).observe(detailStageEl);
-}
-
-let mainEnvMap = null;
-let detailEnvMap = null;
-
 loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
   .then((envMap) => {
-    mainEnvMap = envMap;
     scene.environment = envMap;
     frameMaterial?.setEnvironment(envMap);
     hingeMaterial.setEnvironment(envMap);
@@ -211,16 +115,6 @@ loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
   .catch((error) => {
     console.error("Failed to load studio HDRI environment:", error);
   });
-
-if (detailRenderer) {
-  loadStudioEnvironment(detailRenderer, "/studio_small_09_2k.hdr")
-    .then((envMap) => {
-      detailEnvMap = envMap;
-    })
-    .catch((error) => {
-      console.error("Failed to load detail-stage studio HDRI environment:", error);
-    });
-}
 
 const keyLight = new THREE.DirectionalLight(0xfff4e6, 1.0);
 keyLight.position.set(0.35, 0.45, 0.3);
@@ -312,18 +206,6 @@ async function init() {
     controls.target.set(0, 0, 0);
     controls.update();
 
-    if (detailCamera) {
-      const detailDistance = maxDim * 3.1;
-      detailCamera.position.set(detailDistance * 0.5, detailDistance * 0.3, detailDistance * 0.8);
-      detailCamera.near = maxDim / 100;
-      detailCamera.far = maxDim * 100;
-      detailCamera.updateProjectionMatrix();
-      detailControls.target.set(0, 0, 0);
-      detailControls.minDistance = maxDim * 1.6;
-      detailControls.maxDistance = maxDim * 7;
-      detailControls.update();
-    }
-
     shadowGround.position.y = box.min.y - center.y - maxDim * 0.02;
     shadowGround.scale.setScalar(maxDim * 8);
 
@@ -346,15 +228,6 @@ async function init() {
 
 init();
 
-function applyEnvironment(envMap) {
-  if (!envMap) return;
-  scene.environment = envMap;
-  if (frameMaterial) frameMaterial.envMap = envMap;
-  hingeMaterial.envMap = envMap;
-  if (handlesMaterial) handlesMaterial.envMap = envMap;
-  if (acetateMaterial) acetateMaterial.envMap = envMap;
-}
-
 const timer = new THREE.Timer();
 
 function animate() {
@@ -370,17 +243,10 @@ function animate() {
   textMaterial.updateTextTween(delta);
   controls.update();
 
-  applyEnvironment(mainEnvMap);
   renderer.clear(true, true, true);
   renderer.render(backdrop.scene, backdrop.camera);
   renderer.clearDepth();
   renderer.render(scene, camera);
-
-  if (detailRenderer) {
-    applyEnvironment(detailEnvMap);
-    detailControls.update();
-    detailRenderer.render(scene, detailCamera);
-  }
 }
 
 animate();
@@ -388,6 +254,21 @@ animate();
 function formatPresetLabel(name) {
   const spaced = name.replace(/([a-z])([A-Z])/g, "$1 $2");
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+// A faint colored halo behind each tile, tinted from that preset's own real swatch hex
+// (not a guess) — meant to hint the metal/tint/color before the eye even settles on the
+// sphere render itself, so presets that read similarly at a glance (see frameMaterial.js)
+// are still quick to tell apart. Purely a backdrop behind the tile; the active tile's own
+// red selection ring (.tile-wrap.active .tile) is untouched.
+function getTileTintHex(category, name, frameOverride) {
+  if (category === "lens") return getLensPresetSwatch(name)?.hex;
+  if (category === "acetate") return getAcetatePresetSwatch(name)?.hex;
+  if (category === "text") {
+    if (name === "matchFrame" && frameOverride) return `#${frameOverride.baseColor.getHexString()}`;
+    return getTextPresetSwatch(name)?.hex;
+  }
+  return getFramePresetSwatch(name)?.hex;
 }
 
 function applyTileVisual(tileEl, category, name, extras) {
@@ -443,7 +324,7 @@ function buildMaterialRail(container, sections, { onSelectionChange } = {}) {
   let currentTiles = new Map();
 
   function updateHeading(section) {
-    headingEl.textContent = `${section.tabLabel} — ${formatPresetLabel(section.activeName)}`;
+    crossfadeText(headingEl, `${section.tabLabel} — ${formatPresetLabel(section.activeName)}`);
   }
 
   function attachTilt(tileEl) {
@@ -486,9 +367,13 @@ function buildMaterialRail(container, sections, { onSelectionChange } = {}) {
       tileWrap.className = "tile-wrap";
       if (name === section.activeName) tileWrap.classList.add("active");
 
+      const extras = section.getSwatchExtras?.(name);
+      const tintHex = getTileTintHex(section.swatchCategory, name, extras?.frameOverride);
+      if (tintHex) tileWrap.style.setProperty("--tile-tint", tintHex);
+
       const tileEl = document.createElement("div");
       tileEl.className = "tile";
-      applyTileVisual(tileEl, section.swatchCategory, name, section.getSwatchExtras?.(name));
+      applyTileVisual(tileEl, section.swatchCategory, name, extras);
       attachTilt(tileEl);
 
       const underlineEl = document.createElement("div");
@@ -618,7 +503,57 @@ function buildStagePicker(container, { onChange } = {}) {
   container.appendChild(rowEl);
 }
 
-function buildBackdropPicker(container, backdropInstance) {
+const ANGLE_ROMAN = ["i", "ii", "iii", "iv"];
+const ANGLE_DEGREES = [10, 80, 190, 260];
+
+// "On Mannequin" and "Lens Detail" have no dedicated view built yet — each links out
+// to its own placeholder page, consistent with how they're wired on the homepage's
+// Plate 03 (see src/home.js). "3D View" is the only real, in-place mode here, so it's
+// just a permanently-active label, not a button with nothing else to switch to.
+function buildFramingAndAngles(container) {
+  const modeListEl = document.createElement("div");
+  modeListEl.className = "mode-list";
+  modeListEl.innerHTML = `
+    <span class="mode-item is-active">3D View</span>
+    <a class="mode-item" href="/mannequin.html">On Mannequin</a>
+    <a class="mode-item" href="/lens-detail.html">Lens Detail</a>`;
+
+  const anglesRowEl = document.createElement("div");
+  anglesRowEl.className = "angles-row";
+  anglesRowEl.innerHTML =
+    `<span class="angles-label">fig.</span>` +
+    ANGLE_ROMAN.map((rn, i) => `<button type="button" class="angle-btn" data-index="${i}">${rn}</button>`).join("");
+
+  container.append(modeListEl, anglesRowEl);
+
+  const angleButtons = Array.from(anglesRowEl.querySelectorAll(".angle-btn"));
+  // Mirrors the homepage plate: stays null (no explicit pick yet) rather than 0, so a
+  // future "resume auto-rotate" style check elsewhere could still tell "never touched"
+  // from "picked the first one" — displayIndex just backfills the default for display.
+  let currentAngleIndex = null;
+
+  function renderAngleActiveStates() {
+    const displayIndex = currentAngleIndex ?? 0;
+    angleButtons.forEach((btn, i) => btn.classList.toggle("is-active", i === displayIndex));
+  }
+
+  function setAngle(i) {
+    currentAngleIndex = i;
+    const target = controls.target;
+    const offset = camera.position.clone().sub(target);
+    const radius = Math.hypot(offset.x, offset.z);
+    const rad = (ANGLE_DEGREES[i] * Math.PI) / 180;
+    camera.position.x = target.x + radius * Math.sin(rad);
+    camera.position.z = target.z + radius * Math.cos(rad);
+    controls.update();
+    renderAngleActiveStates();
+  }
+
+  angleButtons.forEach((btn) => btn.addEventListener("click", () => setAngle(Number(btn.dataset.index))));
+  renderAngleActiveStates();
+}
+
+function buildBackdropPicker(container, backdropInstance, { onChange } = {}) {
   const wrapEl = document.createElement("div");
   wrapEl.className = "backdrop-picker";
 
@@ -647,6 +582,7 @@ function buildBackdropPicker(container, backdropInstance) {
     tileWrap.addEventListener("click", () => {
       backdropInstance.setPreset(preset.id);
       tiles.forEach((el, id) => el.classList.toggle("active", id === preset.id));
+      onChange?.();
     });
 
     rowEl.appendChild(tileWrap);
@@ -658,7 +594,17 @@ function buildBackdropPicker(container, backdropInstance) {
 }
 
 const controlsPanel = document.querySelector("#controls");
-buildBackdropPicker(controlsPanel, backdrop);
+const configuratorTitleEl = document.querySelector("#configurator-title");
+
+// "Backdrop — Frame" — mirrors the homepage plate's live title treatment, kept in
+// sync with just these two selections (frameSection is defined further down; this
+// is only ever invoked after it exists, via the callbacks wired below).
+function updateConfiguratorTitle() {
+  const activeBackdrop = BACKDROP_PRESETS.find((preset) => preset.id === backdrop.getActiveId());
+  configuratorTitleEl.textContent = `${activeBackdrop?.label ?? ""} — ${formatPresetLabel(frameSection.activeName)}`;
+}
+
+buildBackdropPicker(controlsPanel, backdrop, { onChange: updateConfiguratorTitle });
 
 let currentFramePresetName = product.frameFinish ?? product.hingeFinish ?? "gunmetal";
 
@@ -712,7 +658,7 @@ const frameSection = isAcetate
       presetNames: ACETATE_PRESET_NAMES,
       activeName: product.acetateColor,
       preview: (name) => acetateMaterial.setAcetateColor(name),
-      onSelect: () => {},
+      onSelect: () => updateConfiguratorTitle(),
     }
   : {
       id: "frame",
@@ -724,6 +670,7 @@ const frameSection = isAcetate
       onSelect: (name) => {
         currentFramePresetName = name;
         refreshMatchFrameLink();
+        updateConfiguratorTitle();
       },
     };
 
@@ -796,9 +743,12 @@ summaryHeadEl.className = "summary-head";
 const summaryTitleEl = document.createElement("div");
 summaryTitleEl.className = "summary-title";
 summaryTitleEl.textContent = "Your Configuration";
+const summaryDashEl = document.createElement("div");
+summaryDashEl.className = "summary-dash";
+summaryDashEl.textContent = "—";
 const summaryRefEl = document.createElement("div");
 summaryRefEl.className = "summary-ref";
-summaryHeadEl.append(summaryTitleEl, summaryRefEl);
+summaryHeadEl.append(summaryTitleEl, summaryDashEl, summaryRefEl);
 
 const summaryListEl = document.createElement("ul");
 summaryListEl.className = "summary-list";
@@ -809,165 +759,41 @@ summaryFootnoteEl.textContent = "Handcrafted to order";
 
 summaryEl.append(summaryHeadEl, summaryListEl, summaryFootnoteEl);
 
-const keepsakeRefEl = document.querySelector("#keepsake-ref");
+// Persistent <li> value spans, built once — so a selection change crossfades the one
+// row that actually changed (see crossfadeText in motion.js) instead of tearing down
+// and rebuilding the whole list on every click, which would just snap.
+let summaryValueEls = null;
 
 function updateSummary() {
-  summaryListEl.innerHTML = "";
-  railSections.forEach((section) => {
-    const item = document.createElement("li");
-    const labelSpan = document.createElement("span");
-    labelSpan.textContent = section.tabLabel;
-    const valueSpan = document.createElement("span");
-    valueSpan.textContent = formatPresetLabel(section.activeName);
-    item.append(labelSpan, valueSpan);
-    summaryListEl.appendChild(item);
-  });
   const refCode = `Ref. ${computeReferenceCode(railSections)}`;
-  summaryRefEl.textContent = refCode;
-  if (keepsakeRefEl) keepsakeRefEl.textContent = refCode;
+
+  if (!summaryValueEls) {
+    summaryListEl.innerHTML = "";
+    summaryValueEls = railSections.map((section) => {
+      const item = document.createElement("li");
+      const labelSpan = document.createElement("span");
+      labelSpan.textContent = section.tabLabel;
+      const valueSpan = document.createElement("span");
+      valueSpan.textContent = formatPresetLabel(section.activeName);
+      item.append(labelSpan, valueSpan);
+      summaryListEl.appendChild(item);
+      return valueSpan;
+    });
+    summaryRefEl.textContent = refCode;
+  } else {
+    railSections.forEach((section, i) => crossfadeText(summaryValueEls[i], formatPresetLabel(section.activeName)));
+    crossfadeText(summaryRefEl, refCode);
+  }
 }
 
 const materialRail = buildMaterialRail(controlsPanel, railSections, { onSelectionChange: updateSummary });
 buildStagePicker(controlsPanel, { onChange: () => materialRail.rerenderActive() });
+buildFramingAndAngles(controlsPanel);
 controlsPanel.appendChild(summaryEl);
 updateSummary();
+updateConfiguratorTitle();
 
 requestAnimationFrame(() => {
   controlsPanel.classList.add("panel-visible");
 });
 
-// ==========================================================================
-// Motion: smooth scroll + scroll-driven choreography.
-// ==========================================================================
-
-initSmoothScroll();
-
-const heroNameSplit = SplitText.create("#hero .product-name", { type: "chars" });
-
-gsap.set("#hero .product-name", { opacity: 1 });
-
-gsap.set("#hero .eyebrow", { y: 12 });
-gsap.set(heroNameSplit.chars, { yPercent: 130, opacity: 0 });
-gsap.set("#hero .description", { y: 12 });
-gsap.set("#hero .cta", { y: 8 });
-gsap.set("#brand", { y: -8 });
-gsap.set("#stage .breadcrumb", { y: -6 });
-
-gsap
-  .timeline({ delay: 0.1 })
-  .to("#brand", { opacity: 0.85, y: 0, duration: DUR.reveal, ease: EASE.entrance })
-  .to("#stage .breadcrumb", { opacity: 0.7, y: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.3")
-  .to("#hero .eyebrow", { opacity: 1, y: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.3")
-  .to(
-    heroNameSplit.chars,
-    { yPercent: 0, opacity: 1, duration: 0.6, ease: EASE.overshoot, stagger: 0.02 },
-    "-=0.25",
-  )
-  .to("#hero .description", { opacity: 0.8, y: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.4")
-  .to("#hero .cta", { opacity: 0.6, y: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.3");
-
-gsap.to("#hero", {
-  yPercent: -22,
-  opacity: 0.2,
-  ease: EASE.scrub,
-  scrollTrigger: { trigger: "#page", start: "top top", end: "bottom top", scrub: true },
-});
-
-gsap.from(".details .section-head", {
-  opacity: 0,
-  y: 18,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".details .section-head", start: "top 85%" },
-});
-
-gsap.to(".spec-list li", {
-  opacity: 1,
-  stagger: 0.06,
-  duration: 0.4,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".spec-columns", start: "top 80%" },
-});
-
-gsap.from(".details-footnote", {
-  opacity: 0,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".details-footnote", start: "top 90%" },
-});
-
-// ---------- Craft: shared pinned sequence ----------
-initCraftSequence("#craft");
-initBackgroundCrossfade("#craft");
-
-// ---------- Every Angle: scales in from slightly smaller with a soft blur-to-focus ---------
-gsap.from(".rotate-section .section-head", {
-  opacity: 0,
-  y: 18,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".rotate-section .section-head", start: "top 85%" },
-});
-
-gsap.fromTo(
-  ".rotate-stage-wrap",
-  { opacity: 0, scale: 0.92, filter: "blur(6px)" },
-  {
-    opacity: 1,
-    scale: 1,
-    filter: "blur(0px)",
-    duration: DUR.revealLg,
-    ease: EASE.entrance,
-    scrollTrigger: { trigger: ".rotate-stage-wrap", start: "top 85%", once: true },
-  },
-);
-
-// ---------- Presentation: icon trio stagger, then the keepsake card ----------
-gsap.from(".presentation .section-head", {
-  opacity: 0,
-  y: 18,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".presentation .section-head", start: "top 85%" },
-});
-
-gsap.from(".presentation-item", {
-  opacity: 0,
-  y: 24,
-  stagger: 0.08,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".presentation-grid", start: "top 85%" },
-});
-
-gsap.from(".keepsake-card", {
-  opacity: 0,
-  y: 20,
-  scale: 0.97,
-  duration: DUR.revealLg,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".keepsake-card", start: "top 88%" },
-});
-
-// ---------- More from the Collection: cards stagger in, scrub-tied ---------
-gsap.from(".more-from-collection .section-head", {
-  opacity: 0,
-  y: 18,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".more-from-collection .section-head", start: "top 85%" },
-});
-
-gsap.from(".look-card", {
-  opacity: 0,
-  y: 50,
-  scale: 0.95,
-  stagger: 0.08,
-  ease: EASE.entrance,
-  scrollTrigger: {
-    trigger: ".look-grid",
-    start: "top 85%",
-    end: "top 40%",
-    scrub: 0.4,
-  },
-});

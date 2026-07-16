@@ -15,7 +15,7 @@ import {
   getActiveStageBackground,
 } from "./swatchRenderer.js";
 import { createBackdrop, BACKDROP_PRESETS, getBackdropThumbnail } from "./backdrop.js";
-import { gsap, SplitText, initSmoothScroll, EASE, DUR } from "./motion.js";
+import { gsap, EASE, DUR } from "./motion.js";
 
 const MODEL_URL = "/models/aviator-glass3.glb";
 
@@ -74,78 +74,9 @@ function updateStageSize() {
 updateStageSize();
 new ResizeObserver(updateStageSize).observe(stageEl);
 
-// ---------- Detail stage: a second, larger presentation moment further down the
-// scroll (the "360°" section). Reuses the exact same `scene` — same model, same
-// materials, same lights/environment — just a second renderer/camera pointed at it,
-// with auto-rotate/drag instead of the hero stage's fixed default angle. ----------
-const detailCanvas = document.querySelector("#detail-app");
-const detailStageEl = document.querySelector(".rotate-stage-wrap");
-
-let detailRenderer = null;
-let detailCamera = null;
-let detailControls = null;
-
-if (detailCanvas && detailStageEl) {
-  detailRenderer = new THREE.WebGLRenderer({ canvas: detailCanvas, antialias: true, alpha: true });
-  detailRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  detailRenderer.outputColorSpace = THREE.SRGBColorSpace;
-  detailRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-  detailRenderer.toneMappingExposure = 1.15;
-  detailRenderer.shadowMap.enabled = true;
-  detailRenderer.shadowMap.type = THREE.VSMShadowMap;
-
-  detailCamera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
-  detailCamera.position.set(0.3, 0.15, 0.42);
-
-  detailControls = new OrbitControls(detailCamera, detailRenderer.domElement);
-  detailControls.enableDamping = true;
-  detailControls.enablePan = false;
-  detailControls.autoRotate = true;
-  detailControls.autoRotateSpeed = 2.4;
-  detailControls.target.set(0, 0, 0);
-  // Real min/max distance limits are set once the model loads and its actual size is
-  // known (see init() below) — these placeholders just keep zoom disabled until then,
-  // rather than allowing an unbounded zoom-through-geometry for a frame or two.
-  detailControls.minDistance = 0.01;
-  detailControls.maxDistance = 100;
-
-  // Dragging is meant to take over from auto-rotate, not fight it — resume the
-  // ambient spin once the visitor lets go rather than leaving it wherever they left it.
-  detailControls.addEventListener("start", () => {
-    detailControls.autoRotate = false;
-  });
-  detailControls.addEventListener("end", () => {
-    detailControls.autoRotate = true;
-  });
-
-  function updateDetailStageSize() {
-    const w = detailStageEl.clientWidth;
-    const h = detailStageEl.clientHeight;
-    detailRenderer.setSize(w, h);
-    detailCamera.aspect = w / h;
-    detailCamera.updateProjectionMatrix();
-  }
-
-  updateDetailStageSize();
-  new ResizeObserver(updateDetailStageSize).observe(detailStageEl);
-}
-
 // Real studio HDRI drives PBR reflections/ambient lighting on the frame metal.
-//
-// PMREMGenerator renders the HDRI into a GPU render-target texture that belongs to
-// whichever WebGLRenderer created it — that texture can't be read back by a second,
-// independent WebGL context (the detail-view renderer below has its own). Sharing a
-// single `scene`/set of materials across the two renderers is otherwise correct and
-// sufficient for staying in sync (see mainEnvMap/detailEnvMap swap in animate()), but
-// the environment map itself has to be generated once per renderer/context, or the
-// second context's materials render with no envMap at all — reading as flat, near-black
-// metal and untinted lenses regardless of the selected preset.
-let mainEnvMap = null;
-let detailEnvMap = null;
-
 loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
   .then((envMap) => {
-    mainEnvMap = envMap;
     scene.environment = envMap;
     // Explicit per-material envMap so each metal material's own (higher) envMapIntensity
     // actually takes effect — see the comment on scene.environmentIntensity above.
@@ -161,16 +92,6 @@ loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
   .catch((error) => {
     console.error("Failed to load studio HDRI environment:", error);
   });
-
-if (detailRenderer) {
-  loadStudioEnvironment(detailRenderer, "/studio_small_09_2k.hdr")
-    .then((envMap) => {
-      detailEnvMap = envMap;
-    })
-    .catch((error) => {
-      console.error("Failed to load detail-stage studio HDRI environment:", error);
-    });
-}
 
 // Key light: mainly exists so the ground plane gets a real contact shadow — most of the
 // even, ambient fill now comes from the HDRI via scene.environmentIntensity above.
@@ -317,25 +238,6 @@ async function init() {
     controls.target.set(0, 0, 0);
     controls.update();
 
-    // Same framing logic as the hero camera, slightly further back so the piece has
-    // room to turn in frame without clipping at glancing angles.
-    if (detailCamera) {
-      const detailDistance = maxDim * 3.1;
-      detailCamera.position.set(detailDistance * 0.5, detailDistance * 0.3, detailDistance * 0.8);
-      detailCamera.near = maxDim / 100;
-      detailCamera.far = maxDim * 100;
-      detailCamera.updateProjectionMatrix();
-      detailControls.target.set(0, 0, 0);
-      // minDistance keeps the camera outside the model's own silhouette even at full
-      // zoom-in — close enough to read as a "close-up detail shot" of the frame, but
-      // never inside the lens/frame geometry. maxDistance keeps zoom-out from shrinking
-      // the piece to a speck. Both are scaled off the model's own real size (maxDim),
-      // not a fixed constant, since that's what actually varies per-model.
-      detailControls.minDistance = maxDim * 1.6;
-      detailControls.maxDistance = maxDim * 7;
-      detailControls.update();
-    }
-
     // Ground plane sits just under the model's lowest point, sized and shadow-framed
     // to match this model's scale (the plane/light were created generic, at unit scale).
     shadowGround.position.y = box.min.y - center.y - maxDim * 0.02;
@@ -360,21 +262,6 @@ async function init() {
 
 init();
 
-// Metal materials keep an explicit envMap reference (see the comment on
-// scene.environmentIntensity above for why), so re-pointing them has to happen
-// alongside scene.environment on every switch between the two renderers/contexts.
-// Plain reassignment (no `material.needsUpdate`) is enough — three.js re-reads
-// material.envMap / scene.environment fresh on every render() call, and both maps
-// are already-compiled non-null textures by the time this runs each frame, so no
-// shader recompilation is triggered by the swap.
-function applyEnvironment(envMap) {
-  if (!envMap) return;
-  scene.environment = envMap;
-  frameMaterial.envMap = envMap;
-  hingeMaterial.envMap = envMap;
-  handlesMaterial.envMap = envMap;
-}
-
 const timer = new THREE.Timer();
 
 function animate() {
@@ -394,17 +281,10 @@ function animate() {
   // between so the product's own depth testing among its meshes starts fresh — the
   // backdrop quad itself never writes depth (see backdrop.js), so this is purely to be
   // explicit/defensive, not to fix any actual z-fighting.
-  applyEnvironment(mainEnvMap);
   renderer.clear(true, true, true);
   renderer.render(backdrop.scene, backdrop.camera);
   renderer.clearDepth();
   renderer.render(scene, camera);
-
-  if (detailRenderer) {
-    applyEnvironment(detailEnvMap);
-    detailControls.update();
-    detailRenderer.render(scene, detailCamera);
-  }
 }
 
 animate();
@@ -848,8 +728,6 @@ summaryFootnoteEl.textContent = "Handcrafted to order";
 
 summaryEl.append(summaryHeadEl, summaryListEl, summaryFootnoteEl);
 
-const keepsakeRefEl = document.querySelector("#keepsake-ref");
-
 function updateSummary() {
   summaryListEl.innerHTML = "";
   railSections.forEach((section) => {
@@ -861,9 +739,7 @@ function updateSummary() {
     item.append(labelSpan, valueSpan);
     summaryListEl.appendChild(item);
   });
-  const refCode = `Ref. ${computeReferenceCode(railSections)}`;
-  summaryRefEl.textContent = refCode;
-  if (keepsakeRefEl) keepsakeRefEl.textContent = refCode;
+  summaryRefEl.textContent = `Ref. ${computeReferenceCode(railSections)}`;
 }
 
 const materialRail = buildMaterialRail(controlsPanel, railSections, { onSelectionChange: updateSummary });
@@ -876,244 +752,3 @@ requestAnimationFrame(() => {
   controlsPanel.classList.add("panel-visible");
 });
 
-// ==========================================================================
-// Motion: smooth scroll + scroll-driven choreography for everything below the
-// fold. The 3D viewport above is untouched by any of this — it's plain DOM/
-// canvas motion layered on top of the existing render loop.
-// ==========================================================================
-
-initSmoothScroll();
-
-// ==========================================================================
-// Hero overlay: one woven timeline, not a slideshow of separate cues — each
-// element starts before the previous finishes (negative overlaps), and the
-// product name reveals character-by-character with a small overshoot, the
-// one moment on this page allowed to feel like it "arrives."
-// ==========================================================================
-
-const heroNameSplit = SplitText.create("#hero .product-name", { type: "chars" });
-
-// The product name itself still carries its own baseline `opacity: 0` (the pre-JS
-// flash guard) — now that the actual reveal happens per-character below, the parent
-// has to be un-hidden explicitly, or it stays invisible forever with nothing left to
-// bring it back to opacity: 1.
-gsap.set("#hero .product-name", { opacity: 1 });
-
-gsap.set("#hero .eyebrow", { y: 12 });
-gsap.set(heroNameSplit.chars, { yPercent: 130, opacity: 0 });
-gsap.set("#hero .description", { y: 12 });
-gsap.set("#hero .cta", { y: 8 });
-gsap.set("#brand", { y: -8 });
-
-// Target opacities match each element's original resting value in the CSS (0.85 / 1 /
-// 1 / 0.8 / 0.6) — the baseline rules only zero them out for the pre-JS flash guard,
-// the design's actual dimming hierarchy is preserved here, not flattened to 1.
-gsap
-  .timeline({ delay: 0.1 })
-  .to("#brand", { opacity: 0.85, y: 0, duration: DUR.reveal, ease: EASE.entrance })
-  .to("#hero .eyebrow", { opacity: 1, y: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.3")
-  .to(
-    heroNameSplit.chars,
-    { yPercent: 0, opacity: 1, duration: 0.6, ease: EASE.overshoot, stagger: 0.02 },
-    "-=0.25",
-  )
-  .to("#hero .description", { opacity: 0.8, y: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.4")
-  .to("#hero .cta", { opacity: 0.6, y: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.3");
-
-gsap.to("#hero", {
-  yPercent: -22,
-  opacity: 0.2,
-  ease: EASE.scrub,
-  scrollTrigger: { trigger: "#page", start: "top top", end: "bottom top", scrub: true },
-});
-
-// ---------- The Details: spec rows stagger in ~60ms apart as the section enters ----------
-gsap.from(".details .section-head", {
-  opacity: 0,
-  y: 18,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".details .section-head", start: "top 85%" },
-});
-
-gsap.to(".spec-list li", {
-  opacity: 1,
-  stagger: 0.06,
-  duration: 0.4,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".spec-columns", start: "top 80%" },
-});
-
-gsap.from(".details-footnote", {
-  opacity: 0,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".details-footnote", start: "top 90%" },
-});
-
-const motionMM = gsap.matchMedia();
-
-// ==========================================================================
-// Craft: pinned, scroll-scrubbed editorial sequence. Scrub is tight (0.4, not
-// the floaty 1+ that visibly lags the scrollbar) and each paragraph reveals
-// word-by-word rather than as a single fading block.
-// ==========================================================================
-motionMM.add("(min-width: 901px)", () => {
-  gsap.from(".atelier-head", {
-    opacity: 0,
-    y: 18,
-    duration: DUR.reveal,
-    ease: EASE.entrance,
-    scrollTrigger: { trigger: ".atelier-head", start: "top 85%" },
-  });
-
-  const steps = gsap.utils.toArray(".atelier-step");
-  const media = steps.map((step) => step.querySelector(".atelier-media"));
-  const texts = steps.map((step) => step.querySelector(".atelier-text"));
-  const dots = gsap.utils.toArray(".atelier-progress-dot");
-
-  const wordSplits = steps.map((step) => SplitText.create(step.querySelector(".atelier-body"), { type: "words" }));
-
-  gsap.set(steps, { opacity: 0 });
-  gsap.set(steps[0], { opacity: 1 });
-  gsap.set(media, { clipPath: "inset(0 100% 0 0)" });
-  gsap.set(media[0], { clipPath: "inset(0 0% 0 0)" });
-  gsap.set(texts, { y: 20 });
-  gsap.set(texts[0], { y: 0 });
-  wordSplits.forEach((split) => gsap.set(split.words, { opacity: 0, yPercent: 60 }));
-  gsap.set(wordSplits[0].words, { opacity: 1, yPercent: 0 });
-  dots[0]?.classList.add("active");
-
-  const tl = gsap.timeline({
-    scrollTrigger: {
-      trigger: "#craft",
-      start: "top top",
-      end: "+=250%",
-      scrub: 0.4,
-      pin: ".atelier-pin",
-      anticipatePin: 1,
-    },
-  });
-
-  steps.forEach((step, i) => {
-    // A short dwell beat on the current step — tight enough that the sequence still
-    // feels driven by scroll, not a pause that breaks the connection to it.
-    tl.to({}, { duration: 0.45 });
-    if (i === steps.length - 1) return;
-    const next = i + 1;
-
-    tl.to(media[i], { clipPath: "inset(0 0 0 100%)", duration: 0.3, ease: EASE.entrance }, ">")
-      .to(step, { opacity: 0, duration: 0.2 }, "<")
-      .to(steps[next], { opacity: 1, duration: 0.2 }, "<0.03")
-      .fromTo(
-        media[next],
-        { clipPath: "inset(0 100% 0 0)" },
-        { clipPath: "inset(0 0% 0 0)", duration: 0.35, ease: EASE.entrance },
-        "<",
-      )
-      .fromTo(texts[next], { y: 20 }, { y: 0, duration: 0.3, ease: EASE.entrance }, "<0.05")
-      .to(
-        wordSplits[next].words,
-        { opacity: 1, yPercent: 0, duration: 0.3, ease: EASE.entrance, stagger: 0.014 },
-        "<0.06",
-      )
-      .call(() => dots.forEach((dot, di) => dot.classList.toggle("active", di === next)));
-  });
-});
-
-motionMM.add("(max-width: 900px)", () => {
-  gsap.from(".atelier-head", {
-    opacity: 0,
-    y: 18,
-    duration: DUR.reveal,
-    ease: EASE.entrance,
-    scrollTrigger: { trigger: ".atelier-head", start: "top 85%" },
-  });
-
-  gsap.utils.toArray(".atelier-step").forEach((step) => {
-    gsap.from(step, {
-      opacity: 0,
-      y: 26,
-      duration: DUR.reveal,
-      ease: EASE.entrance,
-      scrollTrigger: { trigger: step, start: "top 85%" },
-    });
-  });
-});
-
-// ---------- Every Angle: scales in from slightly smaller with a soft blur-to-focus ---------
-gsap.from(".rotate-section .section-head", {
-  opacity: 0,
-  y: 18,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".rotate-section .section-head", start: "top 85%" },
-});
-
-gsap.fromTo(
-  ".rotate-stage-wrap",
-  { opacity: 0, scale: 0.92, filter: "blur(6px)" },
-  {
-    opacity: 1,
-    scale: 1,
-    filter: "blur(0px)",
-    duration: DUR.revealLg,
-    ease: EASE.entrance,
-    // once:true forces this to resolve to its end state the instant ScrollTrigger
-    // re-evaluates it as already past "start" — including on the font-load/window-load
-    // refreshes in motion.js — instead of only ever firing on a live scroll crossing.
-    // Without it, a mistimed refresh could leave this section permanently blurred/
-    // invisible even though it's clearly on screen (see motion.js for why that can happen).
-    scrollTrigger: { trigger: ".rotate-stage-wrap", start: "top 85%", once: true },
-  },
-);
-
-// ---------- Presentation: icon trio stagger, then the keepsake card ----------
-gsap.from(".presentation .section-head", {
-  opacity: 0,
-  y: 18,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".presentation .section-head", start: "top 85%" },
-});
-
-gsap.from(".presentation-item", {
-  opacity: 0,
-  y: 24,
-  stagger: 0.08,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".presentation-grid", start: "top 85%" },
-});
-
-gsap.from(".keepsake-card", {
-  opacity: 0,
-  y: 20,
-  scale: 0.97,
-  duration: DUR.revealLg,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".keepsake-card", start: "top 88%" },
-});
-
-// ---------- Complete the Look: cards stagger in, scrub-tied like the landing collection ---------
-gsap.from(".complete-look .section-head", {
-  opacity: 0,
-  y: 18,
-  duration: DUR.reveal,
-  ease: EASE.entrance,
-  scrollTrigger: { trigger: ".complete-look .section-head", start: "top 85%" },
-});
-
-gsap.from(".look-card", {
-  opacity: 0,
-  y: 50,
-  scale: 0.95,
-  stagger: 0.08,
-  ease: EASE.entrance,
-  scrollTrigger: {
-    trigger: ".look-grid",
-    start: "top 85%",
-    end: "top 40%",
-    scrub: 0.4,
-  },
-});

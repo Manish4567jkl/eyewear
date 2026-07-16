@@ -83,4 +83,25 @@ export function initSmoothScroll() {
   return lenis;
 }
 
+/**
+ * A short crossfade for a piece of text that changes in response to a user choice
+ * (material rail heading, configuration summary values, wall-label readouts) — used so
+ * an instant selection's surrounding UI update reads as part of the same motion as the
+ * ~0.8s 3D material tween it accompanies (see TWEEN_DURATION in frameMaterial.js etc.),
+ * not a separate instant snap sitting next to a smooth render change.
+ */
+export function crossfadeText(el, nextText, { duration = 0.28 } = {}) {
+  if (!el || el.textContent === nextText) return;
+  gsap.to(el, {
+    opacity: 0,
+    y: -4,
+    duration: duration / 2,
+    ease: EASE.hoverIn,
+    onComplete: () => {
+      el.textContent = nextText;
+      gsap.fromTo(el, { opacity: 0, y: 4 }, { opacity: 1, y: 0, duration: duration / 2, ease: EASE.hoverOut });
+    },
+  });
+}
+
 export { gsap, ScrollTrigger, SplitText };

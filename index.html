@@ -15,6 +15,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/styles/magazine.css" />
+    <link rel="stylesheet" href="/src/styles/view-transitions.css" />
   </head>
   <body>
     <div class="mv-app" id="mv-app">
@@ -77,18 +78,23 @@
             <h2 class="mv-configurator-title">Build the frame.</h2>
             <div class="mv-configurator-body">
               <div class="mv-configurator-rail">
-                <div class="mv-product-tabs" id="mv-product-tabs"></div>
-                <p class="mv-product-desc" id="mv-product-desc"></p>
-                <div class="mv-swatch-group">
-                  <div class="mv-swatch-group-label">Frame Color</div>
-                  <div class="mv-swatch-row" id="mv-frame-swatches"></div>
+                <div class="mv-room-tabs" id="mv-room-tabs"></div>
+                <p class="mv-room-desc" id="mv-room-desc"></p>
+                <div class="mv-swatch-cols">
+                  <div class="mv-swatch-group">
+                    <div class="mv-swatch-group-label">Color</div>
+                    <div class="mv-swatch-row" id="mv-frame-swatches"></div>
+                  </div>
+                  <div class="mv-swatch-group">
+                    <div class="mv-swatch-group-label">Tint</div>
+                    <div class="mv-swatch-row" id="mv-lens-swatches"></div>
+                  </div>
                 </div>
-                <div class="mv-swatch-group">
-                  <div class="mv-swatch-group-label">Lens Tint</div>
-                  <div class="mv-swatch-row" id="mv-lens-swatches"></div>
+                <div class="mv-mode-list" id="mv-configurator-modes"></div>
+                <div class="mv-angles" id="mv-angles">
+                  <span class="mv-angles-label">fig.</span>
                 </div>
                 <div class="mv-wall-label">
-                  <div class="mv-wall-label-title">Wall Label</div>
                   <div class="mv-wall-label-readout" id="mv-wall-label-readout"></div>
                   <a class="mv-wall-label-cta" href="/configurator.html" data-magnify="true"
                     >Enter the full configurator →</a
@@ -98,11 +104,10 @@
               <div class="mv-configurator-stage">
                 <div class="mv-viewer" id="mv-viewer" data-magnify="true">
                   <canvas id="mv-configurator-canvas"></canvas>
-                  <span class="mv-viewer-label" id="mv-viewer-label">3D VIEW</span>
                 </div>
-                <div class="mv-configurator-modes" id="mv-configurator-modes"></div>
-                <div class="mv-angles" id="mv-angles">
-                  <span class="mv-angles-label">Angle</span>
+                <div class="mv-viewer-caption">
+                  <span class="mv-viewer-label" id="mv-viewer-label">3D VIEW</span>
+                  <span class="mv-viewer-plate">PLATE 03</span>
                 </div>
               </div>
             </div>
@@ -140,7 +145,87 @@
           </div>
         </section>
 
-        <!-- PLATE 06 — COLOPHON -->
+        <!-- PLATE 06 — MATERIALS -->
+        <section class="mv-page mv-page--materials" data-page="materials">
+          <div class="mv-materials">
+            <div class="mv-materials-spec-label">Spec Sheet — Do Not Reproduce</div>
+            <div class="mv-materials-grid">
+              <div class="mv-materials-head">
+                <div class="mv-plate-label">PLATE 06 — MATERIALS</div>
+                <h2 class="mv-materials-title">What it's<br />made of.</h2>
+                <p class="mv-materials-sub">Four materials, one hinge. Nothing on this list is decorative.</p>
+              </div>
+              <div class="mv-materials-table">
+                <div id="mv-materials-rows"></div>
+                <div class="mv-materials-foot">
+                  <div class="mv-materials-reg">
+                    <span class="mv-materials-reg-label">REG.</span>
+                    <span class="mv-materials-swatch" style="background: var(--mv-accent)"></span>
+                    <span class="mv-materials-swatch" style="background: var(--mv-atelier-accent)"></span>
+                    <span class="mv-materials-swatch" style="background: var(--mv-ink)"></span>
+                    <span class="mv-materials-swatch mv-materials-swatch--outline"></span>
+                  </div>
+                  <span class="mv-materials-stamp">APPROVED — SS26</span>
+                </div>
+              </div>
+            </div>
+            <div class="mv-materials-marquee">
+              <span>— Materials — Materials — Materials — Materials —</span>
+            </div>
+            <div class="mv-corner mv-corner--tl"></div>
+            <div class="mv-corner mv-corner--tr"></div>
+            <div class="mv-corner mv-corner--bl"></div>
+            <div class="mv-corner mv-corner--br"></div>
+          </div>
+        </section>
+
+        <!-- PLATE 07 — THE WEARER -->
+        <section class="mv-page mv-page--wearer" data-page="wearer">
+          <div class="mv-wearer">
+            <div class="mv-plate-label mv-wearer-label">PLATE 07 — DOSSIERS ON THE WEARER</div>
+            <div class="mv-wearer-tabs" id="mv-wearer-tabs"></div>
+            <p class="mv-wearer-quote" id="mv-wearer-quote"></p>
+            <p class="mv-wearer-bio" id="mv-wearer-bio"></p>
+            <div class="mv-wearer-rec" id="mv-wearer-rec"></div>
+            <div class="mv-wearer-image">
+              <span class="mv-wearer-image-caption" id="mv-wearer-image-caption"></span>
+            </div>
+            <div class="mv-wearer-no" id="mv-wearer-no"></div>
+            <div class="mv-wearer-rule"></div>
+            <div class="mv-corner mv-corner--tl mv-corner--pale"></div>
+            <div class="mv-corner mv-corner--tr mv-corner--pale"></div>
+            <div class="mv-corner mv-corner--bl mv-corner--pale"></div>
+            <div class="mv-corner mv-corner--br mv-corner--pale"></div>
+          </div>
+        </section>
+
+        <!-- PLATE 08 — MANIFESTO -->
+        <section class="mv-page mv-page--manifesto" data-page="manifesto">
+          <div class="mv-manifesto">
+            <div class="mv-manifesto-watermark">08</div>
+            <div class="mv-plate-label mv-manifesto-label">PLATE 08 — TEN TENETS (SELECT)</div>
+            <div class="mv-manifesto-issue">Issue No. 07 — The Line</div>
+            <button class="mv-manifesto-prev" id="mv-manifesto-prev" data-magnify="true">‹ tenet</button>
+            <button class="mv-manifesto-next" id="mv-manifesto-next" data-magnify="true">tenet ›</button>
+            <div class="mv-manifesto-counter" id="mv-manifesto-counter"></div>
+            <p class="mv-manifesto-text" id="mv-manifesto-text"></p>
+            <div class="mv-manifesto-dots" id="mv-manifesto-dots"></div>
+            <p class="mv-manifesto-gloss" id="mv-manifesto-gloss"></p>
+            <div class="mv-manifesto-reg">
+              <span class="mv-materials-reg-label">REG.</span>
+              <span class="mv-materials-swatch" style="background: oklch(0.55 0.2 25)"></span>
+              <span class="mv-materials-swatch" style="background: var(--mv-atelier-accent)"></span>
+              <span class="mv-materials-swatch" style="background: var(--mv-paper)"></span>
+              <span class="mv-materials-swatch mv-materials-swatch--outline mv-materials-swatch--pale"></span>
+            </div>
+            <div class="mv-corner mv-corner--tl mv-corner--pale"></div>
+            <div class="mv-corner mv-corner--tr mv-corner--pale"></div>
+            <div class="mv-corner mv-corner--bl mv-corner--pale"></div>
+            <div class="mv-corner mv-corner--br mv-corner--pale"></div>
+          </div>
+        </section>
+
+        <!-- PLATE 09 — COLOPHON -->
         <section class="mv-page mv-page--colophon" data-page="colophon">
           <div class="mv-colophon">
             <div class="mv-colophon-top">
@@ -150,6 +235,9 @@
                 <a href="#" data-jump="configurator" data-magnify="true">Configurator</a>
                 <a href="#" data-jump="collection" data-magnify="true">Collection</a>
                 <a href="#" data-jump="atelier" data-magnify="true">Atelier</a>
+                <a href="#" data-jump="materials" data-magnify="true">Materials</a>
+                <a href="#" data-jump="wearer" data-magnify="true">The Wearer</a>
+                <a href="#" data-jump="manifesto" data-magnify="true">Manifesto</a>
               </div>
               <div>
                 <span class="mv-newsletter-label">Notes from the Atelier</span>
@@ -171,7 +259,7 @@
 
       <button class="mv-nav mv-nav-prev" id="mv-prev" data-magnify="true">← Prev</button>
       <button class="mv-nav mv-nav-next" id="mv-next" data-magnify="true">Next →</button>
-      <div class="mv-counter" id="mv-counter">01 / 06</div>
+      <div class="mv-counter" id="mv-counter">01 / 09</div>
     </div>
 
     <script type="module" src="/src/home.js"></script>

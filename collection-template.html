@@ -12,6 +12,7 @@
     />
     <link rel="stylesheet" href="/src/styles/base.css" />
     <link rel="stylesheet" href="/src/styles/backdrops.css" />
+    <link rel="stylesheet" href="/src/styles/view-transitions.css" />
     <style>
       /* ---------- Collection header ---------- */
 
@@ -278,6 +279,61 @@
         position: absolute;
         inset: 0;
         background: radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 50%);
+      }
+
+      /* Scroll-in mask reveal: an opaque panel that starts covering the swatch and
+         scales away (see collection.js) — a "curtain lifting" rather than a clip-path
+         wipe, so the grid reads differently from the flagship band above it. */
+      .product-swatch-curtain {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        background: var(--page-bg);
+        transform-origin: bottom;
+        pointer-events: none;
+      }
+
+      /* Editorial lookbook hover: the swatch itself scales up slightly and a soft dark
+         veil rises from the bottom with a caption, rather than a flat ecommerce
+         highlight — consistent with the flagship/home treatment of the same idiom. */
+      .product-swatch {
+        transform: scale(1);
+        transition: transform var(--dur-release) var(--ease-out-soft);
+      }
+
+      .product-card:hover .product-swatch {
+        transform: scale(1.045);
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .product-swatch-veil {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 22px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 55%);
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity var(--dur-release) var(--ease-out-soft), transform var(--dur-release) var(--ease-out-soft);
+      }
+
+      .product-card:hover .product-swatch-veil {
+        opacity: 1;
+        transform: translateY(0);
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .product-swatch-cta {
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--cream);
       }
 
       .product-type-tag {

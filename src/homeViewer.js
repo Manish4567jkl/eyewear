@@ -30,7 +30,7 @@ function ensureEnvironment(renderer) {
  * "the product is real" moments (a plate photo, an editorial close-up, a live
  * configurator preview), not full product-page interaction.
  */
-export function mountProductViewer(canvas, product, { autoRotate = true, rotateSpeed = 1.6 } = {}) {
+export function mountProductViewer(canvas, product, { autoRotate = true, rotateSpeed = 1.6, distanceScale = 1 } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -97,7 +97,7 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
     model.position.sub(center);
 
     const maxDim = Math.max(size.x, size.y, size.z) || 1;
-    const distance = maxDim * 2.7;
+    const distance = maxDim * 2.7 * distanceScale;
     camera.position.set(distance * 0.5, distance * 0.32, distance * 0.8);
     camera.near = maxDim / 100;
     camera.far = maxDim * 100;

@@ -1,0 +1,51 @@
+/* Cross-document View Transitions — this is a plain multi-page site (real <a href>
+   navigations, no client-side router), so the native View Transitions API is the
+   correct tool for a "no hard cut between pages" feel: the browser snapshots the
+   outgoing document, snapshots the incoming one, and animates between them — with zero
+   client-side routing. Chromium-only today; everywhere else this rule is simply
+   ignored and navigation happens exactly as it always has. Pure progressive
+   enhancement, never load-bearing for the click-through flow to work. */
+
+@view-transition {
+  navigation: auto;
+}
+
+/* Root: outgoing page settles back half a step (not a flat cut), incoming page wipes
+   up into place — the clip-path reveal is the "considered enter" this project's
+   editorial tone calls for, using the same expo-out curve (0.16, 1, 0.3, 1) this
+   project already treats as its default entrance ease (see EASE.entrance in motion.js). */
+::view-transition-old(root) {
+  animation: mv-page-out 0.32s cubic-bezier(0.7, 0, 0.84, 0) both;
+}
+
+::view-transition-new(root) {
+  animation: mv-page-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes mv-page-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes mv-page-in {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0% 0);
+  }
+}
+
+/* Named shared elements (a product's swatch/image and its name — see the inline
+   view-transition-name assignments in collection.js/home.js/pdp.js) get the browser's
+   automatic position/size morph between documents; this just slows and re-eases that
+   morph so it reads as the same "decisive, not generic" motion as the rest of the site,
+   instead of the default snappy linear resize. */
+::view-transition-group(*) {
+  animation-duration: 0.55s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}

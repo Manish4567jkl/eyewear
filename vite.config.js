@@ -63,6 +63,8 @@ export default defineConfig({
         configurator: resolve(__dirname, "configurator.html"),
         productTemplate: resolve(__dirname, "product-template.html"),
         collectionTemplate: resolve(__dirname, "collection-template.html"),
+        mannequin: resolve(__dirname, "mannequin.html"),
+        lensDetail: resolve(__dirname, "lens-detail.html"),
       },
     },
   },

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maison Vellora — Lens Detail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..500;1,6..96,400..500&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --mv-paper: oklch(0.97 0.01 85);
+        --mv-ink: oklch(0.18 0.01 40);
+        --mv-accent: oklch(0.4 0.16 25);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--mv-paper);
+        color: var(--mv-ink);
+        font-family: "Archivo", sans-serif;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .ph-header {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        padding: 24px 5%;
+      }
+
+      .ph-brand {
+        font-family: "Bodoni Moda", serif;
+        font-size: 17px;
+        text-decoration: none;
+      }
+
+      .ph-main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        min-height: calc(100vh - 80px);
+        padding: 40px 6% 80px;
+        text-align: center;
+      }
+
+      #product-image {
+        width: min(360px, 80vw);
+        aspect-ratio: 4 / 3;
+        border: 1px solid oklch(0.18 0.01 40 / 0.2);
+      }
+
+      .ph-label {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--mv-accent);
+        margin-bottom: 12px;
+      }
+
+      .ph-title {
+        font-family: "Bodoni Moda", serif;
+        font-style: italic;
+        font-size: clamp(28px, 4vw, 44px);
+        margin: 0;
+      }
+
+      .ph-note {
+        font-family: "Space Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        opacity: 0.55;
+      }
+
+      .ph-back {
+        font-family: "Space Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--mv-accent);
+        border-bottom: 1px solid var(--mv-accent);
+        padding-bottom: 2px;
+      }
+    </style>
+  </head>
+  <body data-product-slug="the-ostrande">
+    <header class="ph-header">
+      <a class="ph-brand" href="/index.html">Maison Vellora</a>
+    </header>
+    <main class="ph-main">
+      <div id="product-image"></div>
+      <div>
+        <div class="ph-label">PLATE 03 — THE CONFIGURATOR</div>
+        <h1 class="ph-title">Lens Detail</h1>
+      </div>
+      <p class="ph-note">Coming soon</p>
+      <a class="ph-back" href="/index.html">← Back to Maison Vellora</a>
+    </main>
+    <script type="module" src="/src/placeholderView.js"></script>
+  </body>
+</html>

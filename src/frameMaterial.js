@@ -7,29 +7,36 @@ const TWEEN_DURATION = 0.8; // seconds
 // are the standard measured spectral approximations. baseColor is blended in only as a
 // subtle tint on top (see FRAME_F0_TINT_AMOUNT below), not as the dominant color source.
 const FRAME_PRESETS = {
+  // Values below are tuned for *swatch-scale distinction*, not just per-preset physical
+  // accuracy in isolation — at a 56–130px preview sphere, several of these read as
+  // "similarly bright metallic blob" when their roughness is low enough that the render
+  // is almost entirely a tone-mapped specular highlight (which compresses toward white
+  // regardless of f0 hue). Roughness nudged up a touch and f0/baseColor pushed further
+  // apart per-metal so each one's actual hue carries past the highlight, at a glance,
+  // at small size — the ACES/exposure pipeline itself (swatchRenderer.js) is unchanged.
   polishedGold: {
-    baseColor: new THREE.Color(0xffd27a),
+    baseColor: new THREE.Color(0xffc94a),
     f0: new THREE.Color(1.0, 0.766, 0.336),
     metalness: 1.0,
-    roughness: 0.06,
+    roughness: 0.09,
   },
   brushedSilver: {
-    baseColor: new THREE.Color(0xd6d6d6),
-    f0: new THREE.Color(0.972, 0.96, 0.915),
+    baseColor: new THREE.Color(0xb9c1c9), // cooled from a near-neutral grey so it doesn't
+    f0: new THREE.Color(0.88, 0.93, 0.98), // read as "dim gold" next to polishedGold
     metalness: 1.0,
-    roughness: 0.38,
+    roughness: 0.46, // pushed further into "brushed/matte" vs. gold's mirror gloss
   },
   gunmetal: {
-    baseColor: new THREE.Color(0x3a3d40),
-    f0: new THREE.Color(0.13, 0.14, 0.16), // blackened/oxidized steel — dark by definition
+    baseColor: new THREE.Color(0x20242a), // noticeably darker/cooler — was reading too
+    f0: new THREE.Color(0.09, 0.1, 0.13), // close to titanium/graphite at a glance
     metalness: 1.0,
-    roughness: 0.32,
+    roughness: 0.3,
   },
   roseGold: {
-    baseColor: new THREE.Color(0xe6b3a0),
-    f0: new THREE.Color(1.0, 0.71, 0.6), // gold/copper alloy estimate
+    baseColor: new THREE.Color(0xdb8873), // more saturated pink, not pale peach — was
+    f0: new THREE.Color(1.0, 0.58, 0.52), // reading too close to champagne/copper
     metalness: 1.0,
-    roughness: 0.12,
+    roughness: 0.16,
   },
   matteBlack: {
     baseColor: new THREE.Color(0x1a1a1a),
@@ -47,13 +54,13 @@ const FRAME_PRESETS = {
     baseColor: new THREE.Color(0xf0dfb0),
     f0: new THREE.Color(0.95, 0.86, 0.66), // pale gold alloy, lighter than pure gold
     metalness: 1.0,
-    roughness: 0.12,
+    roughness: 0.18, // was almost identical-highlight to polishedGold at swatch size
   },
   copper: {
     baseColor: new THREE.Color(0xc07350),
     f0: new THREE.Color(0.955, 0.638, 0.538),
     metalness: 1.0,
-    roughness: 0.1,
+    roughness: 0.15,
   },
   graphite: {
     baseColor: new THREE.Color(0x2e3236),
@@ -64,8 +71,9 @@ const FRAME_PRESETS = {
 };
 
 // How much of the metal's specular color comes from baseColor vs. its physical f0.
-// Kept low deliberately — metals get their color mostly from f0, not albedo.
-const FRAME_F0_TINT_AMOUNT = 0.15;
+// Nudged up from 0.15 so each preset's hue reads a little more even under tone-mapped
+// highlights — still low enough that metals are clearly f0-driven, not albedo-driven.
+const FRAME_F0_TINT_AMOUNT = 0.2;
 
 export const FRAME_PRESET_NAMES = Object.keys(FRAME_PRESETS);
 
