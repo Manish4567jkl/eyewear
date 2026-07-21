@@ -16,6 +16,9 @@ let camera = null;
 let sphere = null;
 const cache = new Map();
 
+// Shared by the geometry and by the acetate preview's pattern-scale normalization.
+const SWATCH_SPHERE_RADIUS = 0.62;
+
 function ensureRig() {
   if (renderer) return;
 
@@ -55,7 +58,7 @@ function ensureRig() {
   fill.position.set(-1.4, 0.3, 0.9);
   scene.add(fill);
 
-  sphere = new THREE.Mesh(new THREE.SphereGeometry(0.62, 96, 96));
+  sphere = new THREE.Mesh(new THREE.SphereGeometry(SWATCH_SPHERE_RADIUS, 96, 96));
   scene.add(sphere);
 }
 
@@ -89,6 +92,10 @@ const STAGE_BACKGROUNDS = [
 
 let activeBackgroundId = STAGE_BACKGROUNDS[0].id;
 
+// Fixed light ground for acetate tiles only — see the note in getSwatchCanvas. Warm and
+// mid-toned rather than white, so pale finishes (crystal, honey) still have an edge.
+const ACETATE_SWATCH_STAGE = 0xb9b2a6;
+
 export function getStageBackgrounds() {
   return STAGE_BACKGROUNDS;
 }
@@ -106,7 +113,19 @@ export function setStageBackground(id) {
 function buildPreviewMaterial(category, presetName, frameOverride) {
   if (category === "lens") return createLensMaterial(presetName);
 
-  if (category === "acetate") return createAcetateMaterial(presetName);
+  if (category === "acetate") {
+    const material = createAcetateMaterial(presetName);
+    // The rig's stage colour is set as scene.background below precisely so the acetate's
+    // transmission pass has something to refract — a transmissive sphere against an
+    // empty background samples black and renders as a dark blob, which would make every
+    // translucent finish's tile a lie about the finish.
+    // The pigment pattern is sized in "blotches across the part", so the preview sphere
+    // has to declare its own extent the same way the real frame meshes do — otherwise
+    // the tile shows the pattern at a completely different frequency than the product.
+    // The sphere's diameter (not its bbox diagonal) is its visible extent here.
+    material.setPatternSpaceScale(SWATCH_SPHERE_RADIUS * 2);
+    return material;
+  }
 
   if (category === "text") {
     const material = createTextMaterial(presetName === "matchFrame" ? "silver" : presetName);
@@ -140,8 +159,20 @@ export function getSwatchCanvas({ category, presetName, size = 320, frameOverrid
   // Baked into the render itself (not left to whatever CSS sits behind the canvas) —
   // an opaque dark stage instead of transparent, so the material's own reflections and
   // color read with real contrast rather than blending into the panel's light ivory.
+  // Acetate ignores the stage picker and always previews against a light ground.
+  //
+  // The deep near-black stages exist to make metal's reflections read, and they do — but
+  // acetate is transmissive, and a transmissive material shows you whatever is behind
+  // it. Against a near-black stage every translucent finish samples near-black and the
+  // tile renders as a dark blob, which is precisely backwards: the more see-through the
+  // finish, the less its own tile would tell you about it. A light ground is what makes
+  // crystal read as crystal.
   const stage = STAGE_BACKGROUNDS.find((bg) => bg.id === activeBackgroundId) ?? STAGE_BACKGROUNDS[0];
-  renderer.setClearColor(stage.hex, 1);
+  const stageHex = category === "acetate" ? ACETATE_SWATCH_STAGE : stage.hex;
+  renderer.setClearColor(stageHex, 1);
+  // Set as the scene background too, not just the clear colour, so transmissive
+  // materials have a real source to refract — see buildPreviewMaterial's acetate branch.
+  scene.background = new THREE.Color(stageHex);
   renderer.render(scene, camera);
 
   const canvas = document.createElement("canvas");

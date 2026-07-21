@@ -3,22 +3,27 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { loadModel } from "./loader.js";
 import { logSceneStructure } from "./sceneInspector.js";
 import { createFrameMaterial, FRAME_PRESET_NAMES, getFramePresetSwatch } from "./frameMaterial.js";
-import { createLensMaterial, LENS_PRESET_NAMES, getLensPresetSwatch } from "./lensMaterial.js";
+import {
+  createLensMaterial,
+  LENS_PRESET_NAMES,
+  LENS_COATING_NAMES,
+  getLensPresetSwatch,
+} from "./lensMaterial.js";
 import { createTextMaterial, TEXT_PRESET_NAMES, getTextPresetSwatch } from "./textMaterial.js";
-import { createAcetateMaterial, ACETATE_PRESET_NAMES, getAcetatePresetSwatch } from "./acetateMaterial.js";
+import {
+  createAcetateMaterial,
+  fitAcetatePatternScale,
+  ACETATE_PRESET_NAMES,
+  getAcetatePresetSwatch,
+} from "./acetateMaterial.js";
 import { classifyMesh } from "./meshCategoryMap.js";
 import { loadStudioEnvironment, createShadowCatcherGround } from "./environment.js";
-import {
-  setSwatchEnvironment,
-  getSwatchCanvas,
-  isSwatchEnvironmentReady,
-  getStageBackgrounds,
-  setStageBackground,
-  getActiveStageBackground,
-} from "./swatchRenderer.js";
+import { setSwatchEnvironment, getSwatchCanvas, isSwatchEnvironmentReady } from "./swatchRenderer.js";
 import { createBackdrop, BACKDROP_PRESETS, getBackdropThumbnail } from "./backdrop.js";
 import { gsap, crossfadeText, EASE, DUR } from "./motion.js";
 import { getProduct, getCollection } from "./data/products.js";
+import { createLoadingTransition, navigateWithLoadingTransition } from "./loadingTransition.js";
+import { initPageTransitionLinks, revealStage } from "./pageTransition.js";
 
 const DEFAULT_MODEL_URL = "/models/aviator-glass3.glb";
 
@@ -43,7 +48,7 @@ if (!product) {
 }
 
 const collection = getCollection(product.collection);
-document.title = `Maison Vellora — ${product.name}`;
+document.title = `Thorne & Vale — ${product.name}`;
 
 // Shared-element continuity: matches the swatch view-transition-name set on the
 // collection grid card and home's collection plate (see collection.js/home.js) so a
@@ -58,9 +63,11 @@ const MODEL_URL = product.model ?? DEFAULT_MODEL_URL;
 
 // ---------- Breadcrumb, from data ----------
 document.querySelector("#breadcrumb").innerHTML = `
-  <a href="/index.html">Home</a><span class="sep">/</span>
-  <a href="/collections/${collection.slug}/">${collection.name}</a><span class="sep">/</span>
+  <a href="/index.html" data-nav-direction="back">Home</a><span class="sep">/</span>
+  <a href="/collections/${collection.slug}/" data-nav-direction="back">${collection.name}</a><span class="sep">/</span>
   <span class="current">${product.name}</span>`;
+
+initPageTransitionLinks();
 
 // ==========================================================================
 // Below this point: the exact same 3D configurator/render pipeline the original
@@ -70,6 +77,12 @@ document.querySelector("#breadcrumb").innerHTML = `
 const canvas = document.querySelector("#app");
 const stageEl = document.querySelector("#stage");
 
+// Hidden until the model + environment are actually ready (see the loading transition
+// wiring near init(), below) — otherwise the canvas shows an empty, unlit clear color
+// for however long the load takes, which is exactly the jarring gap the loader exists
+// to cover.
+canvas.style.opacity = "0";
+
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -77,7 +90,10 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.VSMShadowMap;
-renderer.autoClear = false;
+// scene.background is set each frame from the backdrop capture (see animate()), so
+// three clears and draws it itself — autoClear stays on, unlike the previous
+// manual two-pass composite this replaced.
+renderer.autoClear = true;
 
 const scene = new THREE.Scene();
 const backdrop = createBackdrop();
@@ -102,7 +118,10 @@ function updateStageSize() {
 updateStageSize();
 new ResizeObserver(updateStageSize).observe(stageEl);
 
-loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
+// Captured (rather than left as a bare fire-and-forget chain) so the loading
+// transition below can gate on it alongside the model — "environment fully loaded"
+// is part of what "ready" means for this scene, not just the mesh.
+const environmentPromise = loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
   .then((envMap) => {
     scene.environment = envMap;
     frameMaterial?.setEnvironment(envMap);
@@ -166,10 +185,13 @@ async function init() {
 
     logSceneStructure(model, "eyewear_test.glb");
 
+    const acetateMeshes = [];
+
     model.traverse((object) => {
       if (!object.isMesh) return;
 
       const category = classifyMesh(object, MODEL_URL);
+      if (category === "acetate") acetateMeshes.push(object);
       if (category === "lens") {
         object.material = lensMaterial;
       } else if (category === "hinge") {
@@ -190,6 +212,10 @@ async function init() {
       object.castShadow = true;
       object.receiveShadow = true;
     });
+
+    // Acetate pigment is authored in "blotches across the frame", so it needs the
+    // frame's real object-space size before it renders.
+    if (acetateMaterial) fitAcetatePatternScale(acetateMaterial, acetateMeshes);
 
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
@@ -226,12 +252,54 @@ async function init() {
   }
 }
 
-init();
+// Shown the instant this page's script runs (covering the gap this page previously
+// left blank while the model loaded) and dismissed only once both the model and the
+// environment have actually resolved — never on a guessed timeout. See
+// navigateWithLoadingTransition in src/loadingTransition.js for the matching overlay
+// shown on the homepage before the click that lands here.
+const sceneLoader = createLoadingTransition({ palette: "dark", plateNumber: "03" });
+
+Promise.all([init(), environmentPromise]).then(() => {
+  // The model/environment promises resolving only means the data is in memory — the
+  // GPU hasn't compiled shaders for these materials yet, and that compile (custom
+  // frame/acetate/lens/text materials, done lazily on whichever render call first
+  // touches them) can itself take seconds. Forcing it now, synchronously, before the
+  // reveal — rather than letting it happen on the next animate() frame after the
+  // canvas is already visible — is what makes "loader gone" actually mean "the first
+  // frame is ready to render," not just "the fetch finished."
+  renderer.compile(backdrop.scene, backdrop.camera);
+  scene.background = backdrop.capture(renderer);
+  renderer.compile(scene, camera);
+  renderer.render(scene, camera);
+
+  gsap.to(canvas, { opacity: 1, duration: DUR.revealLg, ease: EASE.entrance });
+  sceneLoader.hide();
+  controlsPanel.classList.add("panel-visible");
+  // The panel itself slides/fades in as a block via its own CSS transition (see
+  // #controls.panel-visible) — this staggers its actual content (eyebrow → title →
+  // rail chrome) inside that same motion, rather than the rail arriving as one flat
+  // block. Fires only once the rail is fully built (all the buildX() calls further
+  // down this file have already run synchronously by the time this promise settles).
+  revealStage({
+    eyebrow: ".configurator-eyebrow",
+    headline: "#configurator-title",
+    body: ["#breadcrumb", ".rail-tabs", ".mode-list", ".angles-row"],
+  });
+});
 
 const timer = new THREE.Timer();
 
+// The backdrop capture is a full extra render pass (see backdrop.js) on top of the main
+// scene render, every frame. Its own drift is deliberately "barely perceptible" (see its
+// shader comment), so re-capturing on every other frame instead of every frame halves that
+// pass's cost with no visible difference — the texture just persists between captures.
+let backdropTexture = null;
+let backdropFrame = 0;
+
 function animate() {
   requestAnimationFrame(animate);
+  // Skip all work while the tab is backgrounded — nothing is visible to update anyway.
+  if (document.hidden) return;
   timer.update();
   const delta = timer.getDelta();
   backdrop.update(delta);
@@ -243,9 +311,16 @@ function animate() {
   textMaterial.updateTextTween(delta);
   controls.update();
 
-  renderer.clear(true, true, true);
-  renderer.render(backdrop.scene, backdrop.camera);
-  renderer.clearDepth();
+  // The backdrop is captured to a texture and assigned as scene.background rather than
+  // being blitted as a manual pre-pass. Visually identical — three draws a background
+  // texture as a fullscreen quad ahead of the scene — but it also makes the backdrop
+  // visible to the transmission pass, which is what lets translucent acetate actually
+  // refract what is behind it.
+  backdropFrame++;
+  if (!backdropTexture || backdropFrame % 2 === 0) {
+    backdropTexture = backdrop.capture(renderer);
+  }
+  scene.background = backdropTexture;
   renderer.render(scene, camera);
 }
 
@@ -468,41 +543,6 @@ function buildMaterialRail(container, sections, { onSelectionChange } = {}) {
   };
 }
 
-function buildStagePicker(container, { onChange } = {}) {
-  const rowEl = document.createElement("div");
-  rowEl.className = "stage-picker";
-
-  const labelEl = document.createElement("div");
-  labelEl.className = "stage-picker-label";
-  labelEl.textContent = "Stage";
-
-  const dotsEl = document.createElement("div");
-  dotsEl.className = "stage-picker-dots";
-
-  const buttons = new Map();
-  getStageBackgrounds().forEach((bg) => {
-    const dotEl = document.createElement("button");
-    dotEl.type = "button";
-    dotEl.className = "stage-dot";
-    dotEl.style.setProperty("--dot-color", `#${bg.hex.toString(16).padStart(6, "0")}`);
-    dotEl.setAttribute("aria-label", bg.label);
-    dotEl.title = bg.label;
-    if (bg.id === getActiveStageBackground()) dotEl.classList.add("active");
-
-    dotEl.addEventListener("click", () => {
-      setStageBackground(bg.id);
-      buttons.forEach((el, id) => el.classList.toggle("active", id === bg.id));
-      onChange?.();
-    });
-
-    dotsEl.appendChild(dotEl);
-    buttons.set(bg.id, dotEl);
-  });
-
-  rowEl.append(labelEl, dotsEl);
-  container.appendChild(rowEl);
-}
-
 const ANGLE_ROMAN = ["i", "ii", "iii", "iv"];
 const ANGLE_DEGREES = [10, 80, 190, 260];
 
@@ -525,6 +565,16 @@ function buildFramingAndAngles(container) {
     ANGLE_ROMAN.map((rn, i) => `<button type="button" class="angle-btn" data-index="${i}">${rn}</button>`).join("");
 
   container.append(modeListEl, anglesRowEl);
+
+  // These hand off to a different page's own 3D scene (mannequin.html/lens-detail.html
+  // are both the light "paper" palette) — intercept so the loading transition plays
+  // before the hard navigation, same as the homepage's VIEW PLATE crosshair.
+  modeListEl.querySelectorAll("a.mode-item").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      navigateWithLoadingTransition(link.getAttribute("href"), { palette: "light", plateNumber: "03", leadEl: link });
+    });
+  });
 
   const angleButtons = Array.from(anglesRowEl.querySelectorAll(".angle-btn"));
   // Mirrors the homepage plate: stays null (no explicit pick yet) rather than 0, so a
@@ -551,6 +601,48 @@ function buildFramingAndAngles(container) {
 
   angleButtons.forEach((btn) => btn.addEventListener("click", () => setAngle(Number(btn.dataset.index))));
   renderAngleActiveStates();
+}
+
+// ---------- Model switcher: swap to a different frame entirely ----------
+// This whole page is seeded from ONE product resolved from the URL at module load (see
+// slugFromPath/`product` at the top of the file) — MODEL_URL, isAcetate, every material, and
+// railSections are all fixed to it. Rebuilding all of that live for a different product would
+// mean re-deriving every one of those rather than reusing what's already correct. Each product
+// already has its own fully working PDP behind its own URL — including its own designated
+// swatches (metal frame finishes vs. acetate color, via isAcetate/railSections above) — so
+// this reuses that outright: a real navigation, with the same loading-transition wipe already
+// used for the mode-list's On Mannequin/Lens Detail links, not a live in-scene swap.
+const MODEL_SWITCHER_PRODUCTS = [
+  { slug: "the-ostrande", name: "The Ostrande" },
+  { slug: "the-cassian", name: "The Cassian" },
+  { slug: "the-corbin", name: "The Corbin" },
+];
+
+function buildModelSwitcher(container) {
+  const headingEl = document.createElement("div");
+  headingEl.className = "backdrop-picker-heading";
+  headingEl.textContent = "Model";
+  headingEl.style.marginBottom = "12px";
+
+  const listEl = document.createElement("div");
+  listEl.className = "mode-list";
+
+  MODEL_SWITCHER_PRODUCTS.forEach((p) => {
+    const isActive = p.slug === product.slug;
+    const el = document.createElement(isActive ? "span" : "a");
+    el.className = `mode-item${isActive ? " is-active" : ""}`;
+    el.textContent = p.name;
+    if (!isActive) {
+      el.setAttribute("href", `/products/${p.slug}/`);
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        navigateWithLoadingTransition(`/products/${p.slug}/`, { palette: "light", plateNumber: "03", leadEl: el });
+      });
+    }
+    listEl.appendChild(el);
+  });
+
+  container.append(headingEl, listEl);
 }
 
 function buildBackdropPicker(container, backdropInstance, { onChange } = {}) {
@@ -604,6 +696,8 @@ function updateConfiguratorTitle() {
   configuratorTitleEl.textContent = `${activeBackdrop?.label ?? ""} — ${formatPresetLabel(frameSection.activeName)}`;
 }
 
+buildModelSwitcher(controlsPanel);
+buildFramingAndAngles(controlsPanel);
 buildBackdropPicker(controlsPanel, backdrop, { onChange: updateConfiguratorTitle });
 
 let currentFramePresetName = product.frameFinish ?? product.hingeFinish ?? "gunmetal";
@@ -632,7 +726,7 @@ const lensOrCoatingSection =
         id: "lens",
         tabLabel: "Coating",
         swatchCategory: "lens",
-        presetNames: ["clear", "antiReflective"],
+        presetNames: LENS_COATING_NAMES,
         activeName: product.lensTint === "antiReflective" ? "antiReflective" : "clear",
         preview: (name) => lensMaterial.setLensTint(name),
         onSelect: () => {},
@@ -641,7 +735,7 @@ const lensOrCoatingSection =
         id: "lens",
         tabLabel: "Lens",
         swatchCategory: "lens",
-        presetNames: LENS_PRESET_NAMES.filter((name) => name !== "antiReflective"),
+        presetNames: LENS_PRESET_NAMES,
         activeName: product.lensTint,
         preview: (name) => lensMaterial.setLensTint(name),
         onSelect: () => {},
@@ -787,13 +881,7 @@ function updateSummary() {
 }
 
 const materialRail = buildMaterialRail(controlsPanel, railSections, { onSelectionChange: updateSummary });
-buildStagePicker(controlsPanel, { onChange: () => materialRail.rerenderActive() });
-buildFramingAndAngles(controlsPanel);
 controlsPanel.appendChild(summaryEl);
 updateSummary();
 updateConfiguratorTitle();
-
-requestAnimationFrame(() => {
-  controlsPanel.classList.add("panel-visible");
-});
 

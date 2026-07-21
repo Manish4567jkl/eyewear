@@ -2,12 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Maison Vellora — Collection</title>
+    <title>Thorne & Vale — Collection</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=Playfair+Display:ital,wght@0,500;1,400;1,500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Italiana&family=Inter:wght@400;500&family=Playfair+Display:ital,wght@0,500;1,400;1,500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/styles/base.css" />
@@ -421,10 +422,10 @@
     </style>
   </head>
   <body>
-    <div class="breadcrumb" id="breadcrumb"></div>
+    <div class="breadcrumb reveal" id="breadcrumb" data-exit="text"></div>
 
-    <header class="site-header" id="site-header">
-      <a class="wordmark" href="/index.html">Maison Vellora</a>
+    <header class="site-header" id="site-header" data-exit="text">
+      <a class="wordmark" href="/index.html" data-nav-direction="back">Thorne & Vale</a>
       <nav class="site-nav">
         <button type="button" class="nav-trigger" id="nav-collections-trigger" aria-expanded="false" aria-controls="nav-mega-menu">
           Collections
@@ -440,23 +441,23 @@
       <div class="mega-menu-inner"></div>
     </div>
 
-    <section class="collection-header">
-      <div class="eyebrow" id="collection-eyebrow"></div>
+    <section class="collection-header" data-exit="text">
+      <div class="eyebrow reveal" id="collection-eyebrow"></div>
       <h1 class="collection-title reveal" id="collection-title"></h1>
       <p class="collection-desc reveal" id="collection-desc"></p>
     </section>
 
     <div class="filter-tabs reveal" id="filter-tabs"></div>
 
-    <section class="flagship-band" id="flagship-band"></section>
+    <section class="flagship-band" id="flagship-band" data-lead></section>
 
     <section class="product-grid-section">
-      <div class="product-grid" id="product-grid"></div>
+      <div class="product-grid" id="product-grid" data-exit="media"></div>
     </section>
 
     <footer class="site-footer" id="contact">
       <div class="footer-top">
-        <div class="footer-wordmark">Maison Vellora</div>
+        <div class="footer-wordmark">Thorne & Vale</div>
         <div class="footer-links">
           <div class="footer-col">
             <span class="footer-col-title">Shop</span>
@@ -469,7 +470,7 @@
             <span class="footer-col-title">Company</span>
             <a href="/index.html#craft">Craft</a>
             <a href="/index.html#contact">About</a>
-            <a href="mailto:atelier@maisonvellora.com">Contact</a>
+            <a href="mailto:atelier@thorneandvale.com">Contact</a>
           </div>
           <div class="footer-col">
             <span class="footer-col-title">Legal</span>
@@ -479,7 +480,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <span>© 2026 Maison Vellora. All rights reserved.</span>
+        <span>© 2026 Thorne & Vale. All rights reserved.</span>
         <span>Paris — Geneva</span>
       </div>
     </footer>

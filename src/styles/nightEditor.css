@@ -1,0 +1,594 @@
+/* ---------- The Night Editor — Reading Study ----------
+   A dark hero opening onto a dim "proof room" card: a desk-lamp lens follows
+   the cursor over set text, keeping a small circle at full, crisp contrast
+   while a heavy scrim (.ne-veil) keeps everything outside it genuinely hard
+   to read — the lens should feel necessary, not decorative. */
+
+:root {
+  --ne-panel-bg: oklch(0.14 0.012 50);
+  --ne-hairline: rgba(242, 236, 225, 0.12);
+  --ne-dim: rgba(242, 236, 225, 0.3);
+  --ne-sharp: oklch(0.95 0.02 85);
+  --ne-lamp: 230, 180, 110; /* r,g,b — used in rgba() below */
+}
+
+/* Locked to a single viewport above ~1080px, same rationale/pattern as the
+   Flâneur page: hero + card fill exactly 100vh, nothing scrolls. Below that
+   it reverts to a normal scrolling stacked page. */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.ne-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Hero ---------- */
+
+.ne-hero {
+  flex: 0 0 auto;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 36px 48px 14px;
+  text-align: center;
+}
+
+.ne-title {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 0.98;
+  margin: 0;
+}
+
+.ne-tagline {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 15px;
+  opacity: 0.68;
+  margin: 8px 0 0;
+}
+
+/* ---------- The proof card ---------- */
+
+.ne-study {
+  flex: 1;
+  min-height: 0;
+  padding: 0 32px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.ne-panel {
+  position: relative;
+  width: 100%;
+  max-width: 1720px;
+  height: 100%;
+  background: var(--ne-panel-bg);
+  color: var(--ne-sharp);
+  border-radius: 3px;
+  box-shadow: 0 60px 120px -50px rgba(0, 0, 0, 0.75);
+  display: grid;
+  grid-template-columns: 250px 1fr 300px;
+  overflow: hidden;
+}
+
+/* ---------- Sidebar ---------- */
+
+.ne-sidebar {
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow-y: auto;
+  scrollbar-width: none;
+  border-right: 1px solid var(--ne-hairline);
+}
+
+.ne-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.ne-kicker {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.ne-dossier-no {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.4;
+  margin-top: 6px;
+}
+
+.ne-sidebar-title {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 0.98;
+  margin: 12px 0 14px;
+}
+
+.ne-rule {
+  width: 32px;
+  height: 1px;
+  background: var(--brass);
+  margin-bottom: 14px;
+}
+
+.ne-bio {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.75;
+  margin: 0;
+}
+
+.ne-meta {
+  margin: 20px 0 0;
+}
+
+.ne-meta-row {
+  padding: 7px 0;
+  border-top: 1px solid var(--ne-hairline);
+}
+
+.ne-meta-row dt {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.45;
+}
+
+.ne-meta-row dd {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  margin: 3px 0 0;
+  opacity: 0.92;
+}
+
+.ne-sidebar-bottom {
+  padding-top: 16px;
+  border-top: 1px solid var(--ne-hairline);
+}
+
+.ne-colophon {
+  font-family: "Italiana", serif;
+  font-size: 16px;
+  letter-spacing: 0.1em;
+}
+
+.ne-colophon-label {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin-top: 4px;
+}
+
+/* ---------- Main: plate tabs + reading field ---------- */
+
+.ne-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--ne-hairline);
+}
+
+.ne-plates {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+  padding: 18px 24px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ne-plates::-webkit-scrollbar {
+  display: none;
+}
+
+.ne-plate-tab {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0 14px 12px;
+  cursor: pointer;
+  color: var(--ne-sharp);
+  opacity: 0.4;
+  transition: opacity var(--dur-release) var(--ease-out-soft), border-color var(--dur-release) var(--ease-out-soft);
+}
+
+.ne-plate-tab:hover {
+  opacity: 0.7;
+}
+
+.ne-plate-tab.is-active {
+  opacity: 1;
+  border-color: var(--brass);
+}
+
+.ne-plate-numeral {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 15px;
+}
+
+.ne-plate-name {
+  font-family: "Space Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ---------- The reading field + lens ---------- */
+
+.ne-reading {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 40px 56px;
+  cursor: none;
+}
+
+.ne-watermark {
+  position: absolute;
+  right: 24px;
+  bottom: -40px;
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 340px;
+  line-height: 1;
+  color: var(--ne-sharp);
+  opacity: 0.035;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Subtle on purpose: at higher alpha this reads as an opaque warm blob
+   sitting on top of the text (mix-blend-mode:screen over a near-black
+   background paints the gradient's own color almost directly) — closer to
+   glare than a reading light, and glare is the one thing this dossier's
+   glasses are explicitly for cutting. The actual legibility swing is
+   .ne-veil's job, not this. */
+.ne-lamp-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle at var(--lx, -9999px) var(--ly, -9999px), rgba(var(--ne-lamp), 0.22) 0%, rgba(var(--ne-lamp), 0.07) 40%, transparent 65%);
+}
+
+/* One real text layer — always at full, legible contrast, never duplicated.
+   (An earlier version stacked two copies — a dim one and a lamp-lit one — and
+   masked the top copy to a small circle. Two independently-rasterized copies
+   of the same text sitting exactly on top of each other turned out to
+   double-expose at the sub-pixel level in real browsers: every line came out
+   faintly doubled and misaligned, not cleanly split inside/outside a circle.
+   Single layer removes the possibility entirely.)
+   The text itself stays at full bright contrast always — it's .ne-veil
+   (below) doing all the work, heavily darkening everything outside the lens
+   rather than the text ever being dim on its own. That way the lens hole is
+   a genuinely crisp, full-contrast reveal, not just "less bad." */
+.ne-text {
+  position: absolute;
+  inset: 0;
+  padding: 40px 56px;
+  margin: 0;
+  max-width: 760px;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 19px;
+  line-height: 1.7;
+  color: var(--ne-sharp);
+}
+
+.ne-text :is(p, li, dd) {
+  margin: 0 0 1em;
+}
+
+/* A dark scrim over the whole reading field, punched through with a clear
+   hole wherever the cursor is (see --lx/--ly, set in nightEditor.js on
+   pointermove — the only per-frame cost is these two custom properties,
+   everything else here is a static mask the compositor just re-samples at
+   the new position). Deliberately no backdrop-filter: blur/contrast stacked
+   on top of a mask-image on the same element renders as a broken, per-line
+   glitch in Chromium's compositor rather than a clean blur — flat opacity is
+   what's actually reliable here. */
+.ne-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(2, 2, 1, 0.88);
+  -webkit-mask-image: radial-gradient(circle at var(--lx, -9999px) var(--ly, -9999px), transparent 0px, transparent 90px, black 165px);
+  mask-image: radial-gradient(circle at var(--lx, -9999px) var(--ly, -9999px), transparent 0px, transparent 90px, black 165px);
+}
+
+.ne-dropcap::first-letter {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 52px;
+  line-height: 0.8;
+  float: left;
+  padding: 4px 8px 0 0;
+}
+
+.ne-proof-cols {
+  column-count: 2;
+  column-gap: 28px;
+  font-size: 15.5px;
+}
+
+.ne-footnotes {
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  line-height: 1.9;
+  padding-left: 18px;
+  opacity: 0.95;
+}
+
+.ne-corrections del {
+  text-decoration: line-through;
+  text-decoration-color: var(--oxblood);
+  opacity: 0.55;
+}
+
+.ne-corrections ins {
+  text-decoration: none;
+  font-style: italic;
+}
+
+.ne-caption-block p {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.ne-spec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: "Inter", sans-serif;
+}
+
+.ne-spec-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--ne-hairline);
+  padding-bottom: 8px;
+}
+
+.ne-spec-list dt {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.ne-spec-list dd {
+  font-size: 15px;
+}
+
+/* ---------- Hidden proofing marks ---------- */
+
+.ne-marks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ne-mark {
+  position: absolute;
+  transform: translate(-50%, -50%) scale(calc(0.75 + var(--reveal, 0) * 0.4));
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Caveat", cursive;
+  font-size: 15px;
+  color: var(--oxblood);
+  opacity: calc(0.12 + var(--reveal, 0) * 0.88);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.ne-mark.is-near {
+  text-shadow: 0 0 10px rgba(var(--ne-lamp), 0.6);
+}
+
+.ne-mark--registration {
+  color: var(--brass);
+}
+
+.ne-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  margin: 0;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.has-interacted .ne-hint {
+  opacity: 0;
+}
+
+/* ---------- Detail panel ---------- */
+
+.ne-detail {
+  padding: 32px 28px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.ne-detail::-webkit-scrollbar {
+  display: none;
+}
+
+.ne-detail-idle {
+  margin: auto 0;
+  text-align: center;
+}
+
+.ne-detail-idle-mark {
+  display: block;
+  color: var(--brass);
+  font-size: 18px;
+  margin-bottom: 14px;
+  opacity: 0.8;
+}
+
+.ne-detail-idle p {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.55;
+  opacity: 0.55;
+  margin: 0;
+}
+
+.ne-detail-entry {
+  margin: auto 0;
+}
+
+.ne-detail-glyph {
+  display: block;
+  font-family: "Caveat", cursive;
+  font-size: 26px;
+  color: var(--oxblood);
+  margin-bottom: 8px;
+}
+
+.ne-detail-label {
+  display: block;
+  font-family: "Space Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+.ne-detail-text {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 17px;
+  line-height: 1.55;
+  opacity: 0.92;
+  margin: 0;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1080px) {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+  }
+
+  .ne-page {
+    height: auto;
+    display: block;
+  }
+
+  .ne-study {
+    flex: initial;
+  }
+
+  .ne-panel {
+    height: auto;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: minmax(460px, 62vh) auto;
+    grid-template-areas:
+      "sidebar main"
+      "detail detail";
+  }
+
+  .ne-sidebar {
+    grid-area: sidebar;
+  }
+
+  .ne-main {
+    grid-area: main;
+    border-right: none;
+  }
+
+  .ne-detail {
+    grid-area: detail;
+    border-top: 1px solid var(--ne-hairline);
+    min-height: 200px;
+  }
+
+  .ne-detail-idle {
+    margin: 0;
+    padding: 12px 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .ne-hero {
+    padding: 48px 24px 28px;
+  }
+
+  .ne-study {
+    padding: 0 16px 80px;
+  }
+
+  .ne-reading {
+    cursor: auto;
+    padding: 28px 24px;
+  }
+
+  .ne-text {
+    padding: 28px 24px;
+  }
+
+  .ne-panel {
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(380px, 55vh) auto;
+    grid-template-areas:
+      "sidebar"
+      "main"
+      "detail";
+  }
+
+  .ne-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--ne-hairline);
+    flex-direction: column;
+    gap: 24px;
+  }
+}

@@ -1,0 +1,669 @@
+/* ---------- The Flâneur — Movement Study ----------
+   A dark hero (matching every other real page's header/eyebrow/title rhythm)
+   opening onto a large paper "exhibit card": the illustrated route on the
+   left/center, an editorial annotation panel on the right that fills in with
+   time/observation/metadata/artifact as each numbered waypoint is chosen. */
+
+:root {
+  --fl-paper: oklch(0.97 0.01 85);
+  --fl-ink: oklch(0.18 0.01 40);
+  --fl-hairline: rgba(26, 24, 21, 0.14);
+}
+
+/* Above ~1080px this page is locked to a single viewport — hero + card fill
+   exactly 100vh, nothing scrolls, no scrollbars. Below that (see the two
+   max-width breakpoints at the bottom of this file) the layout stacks and
+   reverts to a normal scrolling page — trying to force a phone/tablet's worth
+   of stacked content into one screen would just clip it. */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.fl-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Hero ---------- */
+/* No site header on this page (see flaneur.html) — just the fixed breadcrumb —
+   so this only needs to clear that, not a full nav bar. Kept short and
+   shallow on purpose: the map is the point, and every pixel given to the hero
+   is a pixel taken from the fixed-height card below it. */
+
+.fl-hero {
+  flex: 0 0 auto;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 36px 48px 14px;
+  text-align: center;
+}
+
+.fl-title {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 0.98;
+  margin: 0;
+}
+
+.fl-tagline {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 15px;
+  opacity: 0.68;
+  margin: 8px 0 0;
+}
+
+/* ---------- The exhibit card ---------- */
+
+.fl-study {
+  flex: 1;
+  min-height: 0;
+  padding: 0 32px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+/* The card fills whatever's left of the viewport after the hero (see .fl-page/
+   .fl-study above) rather than sizing off the map's own aspect-ratio — that
+   was the old approach, and it let annotation content (which varies a lot
+   between waypoints: some carry an artifact and three lines, some are one
+   line) resize the whole card depending which waypoint was clicked. */
+.fl-panel {
+  position: relative;
+  width: 100%;
+  max-width: 1720px;
+  height: 100%;
+  background: var(--fl-paper);
+  color: var(--fl-ink);
+  border-radius: 3px;
+  box-shadow: 0 60px 120px -50px rgba(0, 0, 0, 0.65);
+  display: grid;
+  grid-template-columns: 230px 1.7fr 300px;
+  overflow: hidden;
+}
+
+/* ---------- Sidebar ---------- */
+
+.fl-sidebar {
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  border-right: 1px solid var(--fl-hairline);
+}
+
+/* A hidden safety valve, not a design goal: the card is sized so real content
+   fits without scrolling, but if a viewport is unusually short this still
+   lets the content be reached — just without an OS scrollbar cluttering the
+   editorial layout. */
+.fl-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+.fl-kicker {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.fl-dossier-no {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.45;
+  margin-top: 6px;
+}
+
+.fl-sidebar-title {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 0.98;
+  margin: 12px 0 14px;
+}
+
+.fl-rule {
+  width: 32px;
+  height: 1px;
+  background: var(--oxblood);
+  margin-bottom: 14px;
+}
+
+.fl-bio {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.fl-meta {
+  margin: 20px 0 0;
+}
+
+.fl-meta-row {
+  padding: 7px 0;
+  border-top: 1px solid var(--fl-hairline);
+}
+
+.fl-meta-row dt {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.fl-meta-row dd {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  margin: 3px 0 0;
+}
+
+.fl-sidebar-bottom {
+  padding-top: 16px;
+  border-top: 1px solid var(--fl-hairline);
+}
+
+.fl-colophon {
+  font-family: "Italiana", serif;
+  font-size: 16px;
+  letter-spacing: 0.1em;
+}
+
+.fl-colophon-label {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-top: 4px;
+}
+
+/* ---------- Map ---------- */
+
+.fl-map-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--fl-paper);
+}
+
+.fl-map-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.fl-route-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.fl-route-segment {
+  fill: none;
+  stroke: var(--fl-ink);
+  stroke-opacity: 0.12;
+  stroke-width: 0.3;
+  stroke-linecap: round;
+  transition: stroke 0.4s ease, stroke-opacity 0.4s ease;
+}
+
+.fl-route-segment.is-highlighted {
+  stroke: var(--oxblood);
+  stroke-opacity: 0.85;
+}
+
+.fl-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  background: radial-gradient(
+    circle at var(--fl-sx, 50%) var(--fl-sy, 50%),
+    transparent 0%,
+    transparent 14%,
+    rgba(26, 24, 21, 0.05) 32%,
+    rgba(26, 24, 21, 0.13) 100%
+  );
+}
+
+.fl-hotspots {
+  position: absolute;
+  inset: 0;
+}
+
+.fl-hotspot {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fl-hotspot-dot,
+.fl-hotspot-ring,
+.fl-hotspot-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+}
+
+.fl-hotspot-dot {
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%) scale(1);
+  background: var(--fl-ink);
+  border: 2px solid var(--fl-paper);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.25s var(--ease-out-soft), background 0.25s var(--ease-out-soft);
+}
+
+.fl-hotspot-ring {
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%) scale(0.6);
+  border: 1px solid var(--oxblood);
+  opacity: 0;
+  transition: transform 0.25s var(--ease-out-soft), opacity 0.25s var(--ease-out-soft);
+}
+
+.fl-hotspot-pulse {
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%) scale(1);
+  background: var(--fl-ink);
+  opacity: 0.35;
+  animation: fl-pulse 2.6s ease-out infinite;
+  animation-delay: var(--fl-pulse-delay, 0s);
+}
+
+.fl-hotspot:hover .fl-hotspot-dot,
+.fl-hotspot.is-active .fl-hotspot-dot {
+  transform: translate(-50%, -50%) scale(1.35);
+  background: var(--oxblood);
+}
+
+.fl-hotspot:hover .fl-hotspot-ring,
+.fl-hotspot.is-active .fl-hotspot-ring {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.has-interacted .fl-hotspot-pulse {
+  animation-play-state: paused;
+  opacity: 0;
+}
+
+@keyframes fl-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.6);
+    opacity: 0;
+  }
+}
+
+.fl-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  margin: 0;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.has-interacted .fl-hint {
+  opacity: 0;
+}
+
+/* ---------- Annotation panel ---------- */
+
+.fl-annotation {
+  padding: 32px 28px;
+  border-left: 1px solid var(--fl-hairline);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox — see .fl-sidebar's own note above */
+}
+
+.fl-annotation::-webkit-scrollbar {
+  display: none;
+}
+
+.fl-annotation-entry {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.fl-annotation-idle {
+  margin: auto 0;
+  text-align: center;
+}
+
+.fl-annotation-idle-mark {
+  display: block;
+  color: var(--oxblood);
+  font-size: 15px;
+  margin-bottom: 14px;
+  opacity: 0.8;
+}
+
+.fl-annotation-idle p {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.55;
+  opacity: 0.6;
+  margin: 0;
+}
+
+.fl-annotation-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.fl-annotation-index {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.45;
+}
+
+.fl-annotation-time {
+  font-family: "Space Mono", monospace;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: var(--oxblood);
+}
+
+.fl-annotation-title {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 23px;
+  margin: 6px 0 10px;
+}
+
+.fl-annotation-text {
+  font-family: "Caveat", cursive;
+  font-size: 19px;
+  line-height: 1.35;
+  margin: 0 0 14px;
+  opacity: 0.92;
+}
+
+.fl-annotation-chips {
+  margin: 0 0 4px;
+}
+
+.fl-artifact-slot {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--fl-hairline);
+}
+
+.fl-annotation-close {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+/* ---------- Artifacts — small "physical" inserts, flip on click ---------- */
+
+.fl-artifact {
+  display: block;
+  width: 140px;
+  aspect-ratio: 3 / 4;
+  margin: 0 auto;
+  perspective: 900px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.fl-artifact-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s var(--ease-out-expo);
+  transform-style: preserve-3d;
+}
+
+.fl-artifact.is-flipped .fl-artifact-inner {
+  transform: rotateY(180deg);
+}
+
+.fl-artifact-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  background: var(--fl-paper);
+  border: 1px solid var(--fl-hairline);
+  box-shadow: 0 16px 32px -18px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 14px;
+  text-align: center;
+  transform: rotate(-2deg);
+}
+
+.fl-artifact-front {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+}
+
+.fl-artifact-back {
+  transform: rotate(-2deg) rotateY(180deg);
+  font-family: "Caveat", cursive;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+/* Ticket/pass: two punched "perforation" notches on the long edges. */
+.fl-artifact--pass .fl-artifact-face::before,
+.fl-artifact--pass .fl-artifact-face::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fl-paper);
+  box-shadow: inset 0 0 0 1px var(--fl-hairline);
+  transform: translateY(-50%);
+}
+
+.fl-artifact--pass .fl-artifact-face::before {
+  left: -6px;
+}
+
+.fl-artifact--pass .fl-artifact-face::after {
+  right: -6px;
+}
+
+/* Receipt: dashed edges, tighter type, taller and narrower reads as a paper strip. */
+.fl-artifact--receipt {
+  width: 116px;
+}
+
+.fl-artifact--receipt .fl-artifact-face {
+  border-style: dashed;
+  gap: 4px;
+}
+
+/* Folded photograph: a Polaroid-style deep bottom margin over a soft placeholder tone. */
+.fl-artifact--photo .fl-artifact-face {
+  padding: 10px 10px 22px;
+  transform: rotate(-3deg);
+}
+
+.fl-artifact--photo .fl-artifact-front {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, oklch(0.7 0.05 230), oklch(0.55 0.06 250));
+  font-size: 0;
+}
+
+.fl-artifact--photo .fl-artifact-front span {
+  display: none;
+}
+
+/* Handwritten note: plain torn-paper card, script front and back both. */
+.fl-artifact--note .fl-artifact-face {
+  border-style: dashed;
+  transform: rotate(2deg);
+}
+
+.fl-artifact--note .fl-artifact-front {
+  font-family: "Caveat", cursive;
+  font-size: 17px;
+}
+
+.fl-artifact--note .fl-artifact-back {
+  transform: rotate(2deg) rotateY(180deg);
+}
+
+.fl-artifact-label {
+  text-align: center;
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin: 12px 0 0;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1080px) {
+  /* Below the single-viewport breakpoint, undo the fullscreen lock from the
+     base rules above — a phone/tablet's worth of stacked sidebar + map +
+     annotation is real content that needs to scroll, not clip. */
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+  }
+
+  .fl-page {
+    height: auto;
+    display: block;
+  }
+
+  .fl-study {
+    flex: initial;
+  }
+
+  .fl-panel {
+    /* Stacked layout: the fixed card height from the desktop rule no longer
+       applies (annotation now sits below the map, free to grow), but the map
+       row still needs its own explicit height — see .fl-map-wrap's height:100%. */
+    height: auto;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: minmax(420px, 60vh) auto;
+    grid-template-areas:
+      "sidebar map"
+      "annotation annotation";
+  }
+
+  .fl-sidebar {
+    grid-area: sidebar;
+  }
+
+  .fl-map-wrap {
+    grid-area: map;
+  }
+
+  .fl-annotation {
+    grid-area: annotation;
+    border-left: none;
+    border-top: 1px solid var(--fl-hairline);
+    min-height: 220px;
+  }
+
+  .fl-annotation-idle {
+    margin: 0;
+    padding: 12px 0;
+  }
+
+  .fl-annotation-close {
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 720px) {
+  .fl-hero {
+    padding: 48px 24px 28px;
+  }
+
+  .fl-study {
+    padding: 0 16px 80px;
+  }
+
+  .fl-panel {
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(320px, 55vh) auto;
+    grid-template-areas:
+      "sidebar"
+      "map"
+      "annotation";
+  }
+
+  .fl-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--fl-hairline);
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .fl-sidebar-bottom {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+}

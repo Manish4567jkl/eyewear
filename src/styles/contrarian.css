@@ -1,0 +1,891 @@
+/* ---------- Selected Takes — Cinema Editorial ----------
+   An archive box tipped out onto a table: contact sheet, storyboards, a
+   script page, a shot list, a lighting diagram, stills, a workprint strip,
+   a notes card — overlapping, slightly rotated, nothing on a grid. Every
+   "photo" placeholder is a toned CSS gradient (--co-tone 0-100 picks a hue
+   drift so frames don't all read identically), not a real image — there is
+   no photography in this project, so the artifacts carry the authenticity
+   through paper texture, marks, and captions instead. */
+
+:root {
+  --co-table: oklch(0.15 0.012 50);
+  --co-paper: oklch(0.89 0.018 75);
+  --co-paper-2: oklch(0.85 0.02 70);
+  --co-ink: oklch(0.24 0.012 60);
+  --co-ink-soft: oklch(0.24 0.012 60 / 0.6);
+  --co-hairline: oklch(0.24 0.012 60 / 0.18);
+  --co-red: var(--oxblood);
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.co-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Hero ---------- */
+
+.co-hero {
+  flex: 0 0 auto;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 36px 48px 14px;
+  text-align: center;
+}
+
+.co-title {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 0.98;
+  margin: 0;
+}
+
+.co-tagline {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  opacity: 0.62;
+  margin: 8px 0 0;
+}
+
+/* ---------- The table ---------- */
+
+.co-study {
+  flex: 1;
+  min-height: 0;
+  padding: 0 32px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.co-board {
+  position: relative;
+  width: 100%;
+  max-width: 1760px;
+  height: 100%;
+  background: var(--co-table);
+  border-radius: 3px;
+  box-shadow: 0 60px 120px -50px rgba(0, 0, 0, 0.75);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.co-board::-webkit-scrollbar {
+  display: none;
+}
+
+.co-board-label {
+  position: absolute;
+  top: 14px;
+  left: 20px;
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: oklch(0.75 0.02 75 / 0.55);
+  z-index: 1;
+}
+
+.co-hint {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-family: "Space Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: oklch(0.75 0.02 75 / 0.4);
+  z-index: 1;
+}
+
+/* ---------- Slots — position only; the artifact inside supplies its own
+   size/rotation/shadow, so a slot is just "where on the table". Percentages
+   are relative to the board, chosen to keep every interactive artifact clear
+   of the others (only the decorative tape is meant to overlap a seam). ---------- */
+
+.co-slot {
+  position: absolute;
+}
+
+.co-slot--contact {
+  left: 3%;
+  top: 9%;
+  width: 33%;
+}
+
+.co-slot--lighting {
+  left: 3%;
+  top: 62%;
+  width: 17%;
+}
+
+.co-slot--storyboard-a {
+  left: 40%;
+  top: 7%;
+  width: 17%;
+}
+
+.co-slot--storyboard-b {
+  left: 59%;
+  top: 4%;
+  width: 17%;
+}
+
+.co-slot--script {
+  left: 40%;
+  top: 34%;
+  width: 21%;
+}
+
+.co-slot--shotlist {
+  left: 62%;
+  top: 32%;
+  width: 16%;
+}
+
+.co-slot--still-a {
+  left: 79%;
+  top: 29%;
+  width: 13%;
+}
+
+.co-slot--still-b {
+  left: 79%;
+  top: 57%;
+  width: 13%;
+}
+
+.co-slot--notes {
+  left: 80%;
+  top: 8%;
+  width: 16%;
+}
+
+.co-slot--filmstrip {
+  left: 3%;
+  top: 85%;
+  width: 74%;
+}
+
+/* ---------- Shared artifact chrome ---------- */
+
+.co-artifact {
+  position: relative;
+  background: var(--co-paper);
+  color: var(--co-ink);
+  box-shadow: 0 18px 34px -18px rgba(0, 0, 0, 0.55);
+  padding: 14px 16px 16px;
+  transition: transform 0.25s var(--ease-out-soft), box-shadow 0.25s var(--ease-out-soft);
+}
+
+.co-slot--contact .co-artifact {
+  transform: rotate(-1deg);
+}
+.co-slot--lighting .co-artifact {
+  transform: rotate(1.6deg);
+  background: var(--co-paper-2);
+}
+.co-slot--storyboard-a .co-artifact {
+  transform: rotate(2deg);
+}
+.co-slot--storyboard-b .co-artifact {
+  transform: rotate(-1.4deg);
+}
+.co-slot--script .co-artifact {
+  transform: rotate(1deg);
+}
+.co-slot--shotlist .co-artifact {
+  transform: rotate(-0.6deg);
+  background: var(--co-paper-2);
+}
+.co-slot--still-a .co-artifact {
+  transform: rotate(-2deg);
+}
+.co-slot--still-b .co-artifact {
+  transform: rotate(2.4deg);
+}
+.co-slot--notes .co-artifact {
+  transform: rotate(-1.2deg);
+}
+.co-slot--filmstrip .co-artifact {
+  transform: rotate(0.3deg);
+  background: var(--co-table);
+}
+
+.co-artifact:hover {
+  box-shadow: 0 24px 44px -18px rgba(0, 0, 0, 0.65);
+}
+
+.co-slot--contact .co-artifact:hover,
+.co-slot--lighting .co-artifact:hover,
+.co-slot--storyboard-a .co-artifact:hover,
+.co-slot--storyboard-b .co-artifact:hover,
+.co-slot--script .co-artifact:hover,
+.co-slot--shotlist .co-artifact:hover,
+.co-slot--still-a .co-artifact:hover,
+.co-slot--still-b .co-artifact:hover,
+.co-slot--notes .co-artifact:hover {
+  transform: rotate(0deg) translateY(-3px);
+}
+
+.co-artifact-label {
+  display: block;
+  font-family: "Space Mono", monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--co-ink-soft);
+  margin-bottom: 8px;
+}
+
+/* ---------- Toned placeholder "photo" ----------
+   No iconography, on purpose — pictograms kept reading as clip-art no matter
+   how they were drawn. This is an out-of-focus photograph instead: a toned
+   base, a soft uncertain "shape" (never a recognizable subject), grain, and a
+   vignette. Three custom properties set inline per frame (see toneStyle() in
+   contrarian.js): --co-hue/--co-chroma pick one of several faded vintage-
+   print color casts (warm amber, dusty rose, sage, etc. — never the same one
+   twice in a row), --co-tone drifts the blob's position/gradient angle so
+   even two frames sharing a cast don't look identical. */
+
+:root {
+  --co-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.co-frame-photo,
+.co-storyboard-photo,
+.co-lighting-photo,
+.co-still-photo,
+.co-inspector-photo,
+.co-filmstrip-frame.is-exposed {
+  display: block;
+  position: relative;
+  background:
+    radial-gradient(
+      ellipse 55% 48% at calc(22% + var(--co-tone, 0) * 0.5%) calc(28% + var(--co-tone, 0) * 0.35%),
+      oklch(0.36 var(--co-chroma, 0.015) var(--co-hue, 60) / 0.5),
+      transparent 64%
+    ),
+    linear-gradient(
+      calc(120deg + var(--co-tone, 0) * 1deg),
+      oklch(0.3 var(--co-chroma, 0.015) var(--co-hue, 60)) 0%,
+      oklch(0.19 calc(var(--co-chroma, 0.015) * 0.7) var(--co-hue, 60)) 55%,
+      oklch(0.1 calc(var(--co-chroma, 0.015) * 0.5) var(--co-hue, 60)) 100%
+    );
+}
+
+.co-frame-photo::before,
+.co-storyboard-photo::before,
+.co-lighting-photo::before,
+.co-still-photo::before,
+.co-inspector-photo::before,
+.co-filmstrip-frame.is-exposed::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--co-grain);
+  background-size: 140px 140px;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+}
+
+.co-frame-photo::after,
+.co-storyboard-photo::after,
+.co-lighting-photo::after,
+.co-still-photo::after,
+.co-inspector-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 35% 30%, rgba(255, 255, 255, 0.14), transparent 60%);
+}
+
+/* Unexposed/damaged film-strip frames still get a faint version of the same
+   treatment rather than sitting flat and empty — underdeveloped stock, not a
+   hole in the strip. */
+.co-filmstrip-frame:not(.is-exposed) {
+  background: linear-gradient(100deg, oklch(0.16 0.006 50), oklch(0.09 0.004 40));
+  position: relative;
+}
+
+.co-filmstrip-frame:not(.is-exposed)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--co-grain);
+  background-size: 140px 140px;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+}
+
+.co-filmstrip-frame.is-damaged::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    78deg,
+    transparent 0 6px,
+    rgba(255, 255, 255, 0.16) 6px 7px,
+    transparent 7px 18px
+  );
+}
+
+/* ---------- Contact sheet ---------- */
+
+.co-frames {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+
+.co-frame {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  outline-offset: 2px;
+}
+
+.co-frame-photo {
+  width: 100%;
+  height: 100%;
+}
+
+.co-frame-no {
+  position: absolute;
+  left: 3px;
+  bottom: 2px;
+  font-family: "Space Mono", monospace;
+  font-size: 7px;
+  color: oklch(0.9 0.01 80 / 0.75);
+}
+
+.co-grease-circle {
+  position: absolute;
+  inset: -3px;
+  border: 1.6px solid var(--co-red);
+  border-radius: 46% 54% 52% 48% / 52% 48% 54% 46%;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.co-frame:hover .co-frame-photo,
+.co-frame.is-referenced .co-frame-photo {
+  filter: brightness(1.25);
+}
+
+.co-frame.is-referenced {
+  outline: 1.5px solid var(--co-red);
+}
+
+/* ---------- Shot list ---------- */
+
+.co-shotlist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+}
+
+.co-shotlist-table th {
+  text-align: left;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--co-ink-soft);
+  padding: 0 4px 5px 0;
+  border-bottom: 1px solid var(--co-hairline);
+}
+
+.co-shotlist-table td {
+  padding: 5px 4px 5px 0;
+  border-bottom: 1px solid var(--co-hairline);
+}
+
+.co-shotlist-row {
+  cursor: default;
+  transition: background 0.15s ease;
+}
+
+.co-shotlist-row:hover,
+.co-shotlist-row:focus {
+  background: rgba(92, 42, 42, 0.1);
+  outline: none;
+}
+
+/* ---------- Storyboard ---------- */
+
+.co-storyboard-frame {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+}
+
+.co-storyboard-sketch {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--co-ink);
+  background: var(--co-paper-2);
+  transition: opacity 0.4s ease;
+}
+
+.co-storyboard-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.co-artifact:hover .co-storyboard-sketch {
+  opacity: 0;
+}
+
+.co-artifact:hover .co-storyboard-photo {
+  opacity: 1;
+}
+
+.co-storyboard-note {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.72;
+  margin: 6px 0 0;
+}
+
+/* ---------- Annotated script ---------- */
+
+.co-script-page {
+  position: relative;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.co-script-slug {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+}
+
+.co-script-action {
+  opacity: 0.85;
+  margin: 0 0 6px;
+}
+
+.co-script-character {
+  margin: 8px 0 2px 24%;
+  letter-spacing: 0.04em;
+}
+
+.co-script-dialogue {
+  margin: 0 0 6px 14%;
+  max-width: 44%;
+}
+
+.co-script-dialogue.is-highlighted {
+  background: rgba(92, 42, 42, 0.14);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0 3px;
+}
+
+.co-script-dialogue del {
+  color: var(--co-red);
+  opacity: 0.7;
+  text-decoration-color: var(--co-red);
+}
+
+.co-script-annotations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.co-script.is-annotated .co-script-annotations {
+  opacity: 1;
+}
+
+.co-script-annotation {
+  position: absolute;
+  right: 1%;
+  width: 38%;
+  font-family: "Caveat", cursive;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--co-red);
+  transform: rotate(-1.5deg);
+}
+
+.co-script-hint {
+  font-family: "Space Mono", monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.4;
+  margin: 10px 0 0;
+  cursor: pointer;
+}
+
+/* ---------- Lighting diagram ---------- */
+
+.co-lighting-frame {
+  position: relative;
+  aspect-ratio: 7 / 5;
+  overflow: hidden;
+}
+
+.co-lighting-diagram {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--co-ink);
+  background: var(--co-paper-2);
+  transition: opacity 0.4s ease;
+}
+
+.co-lighting-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.co-artifact:hover .co-lighting-diagram {
+  opacity: 0;
+}
+
+.co-artifact:hover .co-lighting-photo {
+  opacity: 1;
+}
+
+/* ---------- Production stills ---------- */
+
+.co-still-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 6px;
+}
+
+.co-slot--still-a .co-artifact-label,
+.co-slot--still-b .co-artifact-label {
+  margin-bottom: 0;
+}
+
+/* ---------- Director's notes card ---------- */
+
+.co-notes-card {
+  cursor: pointer;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.co-notes-quote {
+  font-family: "Caveat", cursive;
+  font-size: 19px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.co-notes-hint {
+  font-family: "Space Mono", monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.4;
+  align-self: flex-end;
+}
+
+/* ---------- Film strip ---------- */
+
+.co-filmstrip-viewport {
+  overflow: hidden;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.co-filmstrip-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.co-filmstrip-track {
+  display: flex;
+  gap: 3px;
+  width: max-content;
+  will-change: transform;
+}
+
+.co-filmstrip-frame {
+  width: 78px;
+  aspect-ratio: 4 / 3;
+  flex: 0 0 auto;
+  background: oklch(0.1 0.005 40);
+  position: relative;
+}
+
+.co-filmstrip-frame::before,
+.co-filmstrip-frame::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, oklch(0.06 0 0) 0 4px, transparent 4px 9px);
+}
+
+.co-filmstrip-frame::before {
+  top: 0;
+}
+.co-filmstrip-frame::after {
+  bottom: 0;
+}
+
+.co-filmstrip-frame.is-damaged {
+  filter: contrast(0.7) brightness(0.6);
+}
+
+.co-filmstrip-frame.is-damaged::before,
+.co-filmstrip-frame.is-damaged::after {
+  opacity: 0.4;
+}
+
+/* ---------- Decorative marks ---------- */
+
+.co-deco {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.co-deco--tape-1,
+.co-deco--tape-2,
+.co-deco--tape-3 {
+  width: 56px;
+  height: 18px;
+  background: oklch(0.86 0.02 85 / 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.co-deco--tape-1 {
+  left: 17%;
+  top: 8%;
+  transform: rotate(-32deg);
+}
+
+.co-deco--tape-2 {
+  left: 57%;
+  top: 3%;
+  transform: rotate(20deg);
+}
+
+.co-deco--tape-3 {
+  left: 39.5%;
+  top: 33%;
+  transform: rotate(-18deg);
+}
+
+.co-deco--stamp {
+  right: 20%;
+  bottom: 6%;
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--co-red);
+  border: 1.5px solid var(--co-red);
+  padding: 3px 8px;
+  opacity: 0.55;
+  transform: rotate(-9deg);
+}
+
+.co-deco--registration {
+  left: 96%;
+  top: 4%;
+  font-size: 16px;
+  color: oklch(0.7 0.02 75 / 0.4);
+}
+
+/* ---------- Inspector overlay ---------- */
+
+.co-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(6, 5, 4, 0.72);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.co-backdrop.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.co-inspector {
+  position: fixed;
+  z-index: 91;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  width: min(560px, 88vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--co-paper);
+  color: var(--co-ink);
+  box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s var(--ease-out-soft);
+}
+
+.co-inspector.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.co-inspector-photo {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+}
+
+.co-inspector-body {
+  padding: 22px 26px 26px;
+}
+
+.co-inspector-label {
+  display: block;
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+.co-inspector-title {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 24px;
+  margin: 0 0 10px;
+}
+
+.co-inspector-text {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  opacity: 0.85;
+  margin: 0;
+}
+
+.co-inspector-tag {
+  display: inline-block;
+  margin-top: 12px;
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--co-red);
+  border: 1px solid var(--co-red);
+  padding: 3px 8px;
+}
+
+.co-notes-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  font-family: "Caveat", cursive;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1200px) {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+  }
+
+  .co-page {
+    height: auto;
+    display: block;
+  }
+
+  .co-study {
+    flex: initial;
+    padding: 0 20px 60px;
+  }
+
+  .co-board {
+    height: auto;
+    min-height: 1400px;
+  }
+}
+
+@media (max-width: 720px) {
+  .co-hero {
+    padding: 48px 24px 24px;
+  }
+
+  .co-board {
+    min-height: 0;
+  }
+
+  .co-slot {
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin: 0 0 24px;
+    padding: 0 20px;
+  }
+
+  .co-slot .co-artifact {
+    transform: none !important;
+  }
+
+  .co-board-label {
+    position: relative;
+    top: auto;
+    left: auto;
+    display: block;
+    padding: 16px 20px 0;
+  }
+
+  .co-hint {
+    display: none;
+  }
+
+  .co-deco {
+    display: none;
+  }
+}

@@ -7,54 +7,104 @@ import * as THREE from "three";
 // never change how the frame/lens shaders look.
 export const BACKDROP_PRESETS = [
   {
-    id: "studioIvory",
-    label: "Studio Ivory",
-    topColor: new THREE.Color(0xf7f5f1),
-    bottomColor: new THREE.Color(0xe2dbcd),
-    glowColor: new THREE.Color(0xffffff),
-    glowStrength: 0.32,
-    glowRadius: 0.55,
-    vignette: 0.12,
-  },
-  {
-    id: "midnight",
-    label: "Midnight",
-    topColor: new THREE.Color(0x211e1a),
-    bottomColor: new THREE.Color(0x030302),
-    glowColor: new THREE.Color(0x8b7355),
-    glowStrength: 0.3,
-    glowRadius: 0.48,
-    vignette: 0.26,
-  },
-  {
-    id: "dune",
-    label: "Dune",
-    topColor: new THREE.Color(0xe9cda3),
-    bottomColor: new THREE.Color(0xaa5636),
-    glowColor: new THREE.Color(0xfff1d2),
-    glowStrength: 0.28,
-    glowRadius: 0.6,
-    vignette: 0.1,
-  },
-  {
-    id: "slate",
-    label: "Slate",
-    topColor: new THREE.Color(0xc7cfd6),
-    bottomColor: new THREE.Color(0x555f6a),
-    glowColor: new THREE.Color(0xe4ecf5),
-    glowStrength: 0.24,
-    glowRadius: 0.55,
-    vignette: 0.14,
-  },
-  {
-    id: "emeraldDepth",
-    label: "Emerald Depth",
-    topColor: new THREE.Color(0x123529),
-    bottomColor: new THREE.Color(0x020f09),
-    glowColor: new THREE.Color(0x37b384),
+    id: "abyss",
+    label: "Abyss",
+    topColor: new THREE.Color(0x0d1a2e),
+    bottomColor: new THREE.Color(0x010305),
+    glowColor: new THREE.Color(0x4fa8ff),
     glowStrength: 0.4,
-    glowRadius: 0.48,
-    vignette: 0.24,
+    glowRadius: 0.42,
+    vignette: 0.34,
+  },
+  {
+    id: "arcticCyan",
+    label: "Arctic Cyan",
+    topColor: new THREE.Color(0x063a42),
+    bottomColor: new THREE.Color(0x010f12),
+    glowColor: new THREE.Color(0x2ee8f0),
+    glowStrength: 0.38,
+    glowRadius: 0.44,
+    vignette: 0.32,
+  },
+  {
+    id: "voidEmerald",
+    label: "Void Emerald",
+    topColor: new THREE.Color(0x0c2e26),
+    bottomColor: new THREE.Color(0x020806),
+    glowColor: new THREE.Color(0x2ee6b8),
+    glowStrength: 0.38,
+    glowRadius: 0.44,
+    vignette: 0.32,
+  },
+  {
+    id: "pineNoir",
+    label: "Pine Noir",
+    topColor: new THREE.Color(0x0f2818),
+    bottomColor: new THREE.Color(0x030a05),
+    glowColor: new THREE.Color(0x7dfa9e),
+    glowStrength: 0.34,
+    glowRadius: 0.46,
+    vignette: 0.32,
+  },
+  {
+    id: "noirViolet",
+    label: "Noir Violet",
+    topColor: new THREE.Color(0x241030),
+    bottomColor: new THREE.Color(0x04020a),
+    glowColor: new THREE.Color(0x9d6fff),
+    glowStrength: 0.36,
+    glowRadius: 0.44,
+    vignette: 0.32,
+  },
+  {
+    id: "electricOrchid",
+    label: "Electric Orchid",
+    topColor: new THREE.Color(0x3a0f38),
+    bottomColor: new THREE.Color(0x0a020a),
+    glowColor: new THREE.Color(0xff5fd1),
+    glowStrength: 0.4,
+    glowRadius: 0.42,
+    vignette: 0.34,
+  },
+  {
+    id: "bloodGarnet",
+    label: "Blood Garnet",
+    topColor: new THREE.Color(0x4a0e18),
+    bottomColor: new THREE.Color(0x100205),
+    glowColor: new THREE.Color(0xff4d5e),
+    glowStrength: 0.38,
+    glowRadius: 0.44,
+    vignette: 0.32,
+  },
+  {
+    id: "graphite",
+    label: "Graphite",
+    topColor: new THREE.Color(0x232527),
+    bottomColor: new THREE.Color(0x050506),
+    glowColor: new THREE.Color(0xc8d6de),
+    glowStrength: 0.28,
+    glowRadius: 0.44,
+    vignette: 0.32,
+  },
+  {
+    id: "onyxIce",
+    label: "Onyx Ice",
+    topColor: new THREE.Color(0x16181c),
+    bottomColor: new THREE.Color(0x030304),
+    glowColor: new THREE.Color(0x9fd6ff),
+    glowStrength: 0.32,
+    glowRadius: 0.42,
+    vignette: 0.34,
+  },
+  {
+    id: "glacier",
+    label: "Glacier",
+    topColor: new THREE.Color(0xd5e6f2),
+    bottomColor: new THREE.Color(0x6f9ab8),
+    glowColor: new THREE.Color(0xeaf6ff),
+    glowStrength: 0.3,
+    glowRadius: 0.58,
+    vignette: 0.12,
   },
 ];
 
@@ -201,11 +251,84 @@ export function createBackdrop(initialPresetId = BACKDROP_PRESETS[0].id) {
     if (tween.t >= 1) tween.active = false;
   }
 
+  // ---------------------------------------------------------------------------
+  // Capture target — see capture() below.
+  //
+  // Sized in physical pixels but capped: this texture is only ever read as a *background*
+  // and as the source for the acetate's transmission pass (which three mips and blurs by
+  // roughness anyway), so matching the canvas 1:1 buys nothing and costs fill rate on
+  // high-DPI displays.
+  let target = null;
+  let targetWidth = 0;
+  let targetHeight = 0;
+
+  function ensureTarget(width, height) {
+    // Capped well below the drawing buffer size: this is a soft gradient that transmission
+    // blurs further by roughness anyway (see the comment above), so a high-res capture buys
+    // no visible fidelity while costing real fill rate every single frame on high-DPI
+    // displays. 900px is comfortably above what the blur/roughness sampling can resolve.
+    const w = Math.max(2, Math.min(Math.round(width), 900));
+    const h = Math.max(2, Math.min(Math.round(height), 900));
+    if (target && targetWidth === w && targetHeight === h) return;
+
+    target?.dispose();
+    target = new THREE.WebGLRenderTarget(w, h, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      depthBuffer: false,
+      stencilBuffer: false,
+    });
+    // Marked sRGB so three converts on write and samples it back linearly — without
+    // this the gradient is written raw and reads back over-bright when used as a
+    // background or refracted through the acetate.
+    target.texture.colorSpace = THREE.SRGBColorSpace;
+    targetWidth = w;
+    targetHeight = h;
+  }
+
+  /**
+   * Renders the backdrop into an offscreen texture and returns it, for use as
+   * `scene.background`.
+   *
+   * This module used to be rendered as a manual pass straight to the canvas before the
+   * product scene, deliberately staying outside the scene graph. That worked visually,
+   * but it made the backdrop invisible to three's transmission pass — which builds its
+   * refraction source from `scene.background` plus the scene's opaque objects — so a
+   * transmissive material had nothing behind it but black, and translucent acetate could
+   * not be made to look translucent at all.
+   *
+   * Capturing to a texture and assigning it as the background is visually equivalent
+   * (three draws a background texture as a fullscreen quad before the scene, which is
+   * exactly what the manual pass did) while making the backdrop a real participant in
+   * transmission. The animated gradient still animates: this is re-captured each frame.
+   *
+   * Deliberately does not feed scene.environment — the backdrop must never affect IBL.
+   */
+  function capture(renderer) {
+    const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+    ensureTarget(size.x, size.y);
+
+    const prevTarget = renderer.getRenderTarget();
+    const prevAutoClear = renderer.autoClear;
+    renderer.autoClear = true;
+    renderer.setRenderTarget(target);
+    renderer.render(scene, camera);
+    renderer.setRenderTarget(prevTarget);
+    renderer.autoClear = prevAutoClear;
+
+    return target.texture;
+  }
+
   function resize(width, height) {
     uniforms.u_resolution.value.set(width, height);
   }
 
-  return { scene, camera, setPreset, update, resize, getActiveId: () => activeId };
+  function dispose() {
+    target?.dispose();
+    target = null;
+  }
+
+  return { scene, camera, setPreset, update, resize, capture, dispose, getActiveId: () => activeId };
 }
 
 // ---------- Miniature previews for the picker UI ----------

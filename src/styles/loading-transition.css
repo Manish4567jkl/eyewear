@@ -1,0 +1,203 @@
+/* Reusable editorial loading transition — see src/loadingTransition.js. Dropped over
+   any 3D scene entry point (PDP stage, mannequin, configurator) while the GLTFLoader
+   model, textures, and studio environment resolve. Matches the site's existing plate
+   furniture (Space Mono labels, corner registration marks, Bodoni Moda italic display
+   copy) and its shared expo-out/overshoot easing, rather than a generic app spinner. */
+
+.mv-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: var(--loader-bg);
+  color: var(--loader-ink);
+  opacity: 0;
+}
+
+.mv-loader[data-palette="dark"] {
+  --loader-bg: #0c0b0a;
+  --loader-ink: #f2ece1;
+  --loader-accent: #a6825a;
+}
+
+.mv-loader[data-palette="light"] {
+  --loader-bg: oklch(0.97 0.01 85);
+  --loader-ink: oklch(0.18 0.01 40);
+  --loader-accent: oklch(0.4 0.16 25);
+}
+
+.mv-loader-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-style: solid;
+  border-width: 0;
+  border-color: color-mix(in oklab, var(--loader-ink) 40%, transparent);
+  pointer-events: none;
+}
+
+.mv-loader-corner--tl {
+  top: 3%;
+  left: 3%;
+  border-left-width: 1px;
+  border-top-width: 1px;
+}
+
+.mv-loader-corner--tr {
+  top: 3%;
+  right: 3%;
+  border-right-width: 1px;
+  border-top-width: 1px;
+}
+
+.mv-loader-corner--bl {
+  bottom: 3%;
+  left: 3%;
+  border-left-width: 1px;
+  border-bottom-width: 1px;
+}
+
+.mv-loader-corner--br {
+  bottom: 3%;
+  right: 3%;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+
+/* Crosshair — the same "View Plate" cursor motif (see .mv-cursor in magazine.css),
+   scaled up and set gently rotating/pulsing as the loading indicator itself, rather
+   than introducing a new spinner graphic. */
+.mv-loader-crosshair {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  animation: mv-loader-rotate 3.4s linear infinite;
+}
+
+.mv-loader-ring {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--loader-accent);
+  border-radius: 50%;
+  animation: mv-loader-pulse 1.8s cubic-bezier(0.33, 1, 0.68, 1) infinite;
+}
+
+.mv-loader-h,
+.mv-loader-v {
+  position: absolute;
+  background: var(--loader-accent);
+}
+
+.mv-loader-h {
+  top: 50%;
+  left: -8px;
+  right: -8px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.mv-loader-v {
+  left: 50%;
+  top: -8px;
+  bottom: -8px;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.mv-loader-phrase {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(19px, 2.2vw, 28px);
+  line-height: 1.2;
+  text-align: center;
+  max-width: 70vw;
+  opacity: 0.92;
+}
+
+.mv-loader-bar {
+  width: 180px;
+  height: 1px;
+  background: color-mix(in oklab, var(--loader-ink) 18%, transparent);
+  overflow: hidden;
+}
+
+.mv-loader-bar-fill {
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: var(--loader-accent);
+}
+
+.mv-loader-bar-fill.is-indeterminate {
+  animation: mv-loader-sweep 1.7s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.mv-loader-plate {
+  position: absolute;
+  bottom: 32px;
+  right: 36px;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--loader-accent);
+  opacity: 0.85;
+}
+
+@keyframes mv-loader-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mv-loader-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes mv-loader-sweep {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  70% {
+    transform: scaleX(0.82);
+    opacity: 1;
+  }
+  85% {
+    opacity: 0;
+  }
+  86% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mv-loader-crosshair,
+  .mv-loader-ring,
+  .mv-loader-bar-fill.is-indeterminate {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .mv-loader-plate {
+    bottom: 20px;
+    right: 20px;
+  }
+}

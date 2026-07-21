@@ -2,16 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Maison Vellora — Product</title>
+    <title>Thorne & Vale — Product</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..500;1,6..96,400..500&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Italiana&family=Inter:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..500;1,6..96,400..500&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/styles/base.css" />
     <link rel="stylesheet" href="/src/styles/view-transitions.css" />
+    <link rel="stylesheet" href="/src/styles/loading-transition.css" />
     <style>
       #page {
         display: grid;
@@ -35,29 +37,60 @@
         display: block;
       }
 
+      /* Editorial-styled back link — a bordered box with an eyebrow's letter-spacing
+         and Space Mono, matching the "PLATE 0X — ..." labels used throughout the site,
+         rather than a plain text link. */
+      .close-plate {
+        position: absolute;
+        top: 24px;
+        left: 24px;
+        z-index: 6;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border: 1px solid var(--hairline);
+        font-family: "Inter", sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text);
+        text-decoration: none;
+        transition: border-color var(--dur-release) var(--ease-out-soft), background-color var(--dur-release) var(--ease-out-soft);
+      }
+
+      .close-plate:hover {
+        border-color: var(--brass);
+        background-color: rgba(139, 115, 85, 0.08);
+        transition-duration: var(--dur-snap);
+        transition-timing-function: var(--ease-out-expo);
+      }
+
+      .close-plate .glyph {
+        font-size: 11px;
+      }
+
       #brand {
         position: absolute;
-        top: 36px;
+        top: 64px;
         left: 44px;
         z-index: 5;
-        font-family: "Playfair Display", serif;
+        font-family: "Italiana", serif;
         font-size: 15px;
         font-weight: 500;
         letter-spacing: 0.28em;
         text-transform: uppercase;
         color: var(--text);
-        opacity: 0;
         user-select: none;
         text-decoration: none;
       }
 
       #stage .breadcrumb {
         position: absolute;
-        top: 74px;
+        top: 102px;
         left: 44px;
         padding: 0;
         z-index: 5;
-        opacity: 0;
       }
 
       /* ---------- Configurator column ----------
@@ -426,50 +459,6 @@
         opacity: 0.9;
       }
 
-      .stage-picker {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        margin-top: 22px;
-      }
-
-      .stage-picker-label {
-        font-family: "Space Mono", monospace;
-        font-size: 9px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--mv-ink);
-        opacity: 0.45;
-      }
-
-      .stage-picker-dots {
-        display: flex;
-        gap: 10px;
-      }
-
-      .stage-dot {
-        width: 17px;
-        height: 17px;
-        border-radius: 50%;
-        padding: 0;
-        cursor: pointer;
-        background: var(--dot-color);
-        box-shadow: 0 0 0 1px oklch(0.18 0.01 40 / 0.2);
-        opacity: 0.75;
-        transition: opacity var(--dur-release) var(--ease-out-soft), box-shadow var(--dur-release) var(--ease-out-soft);
-      }
-
-      .stage-dot:hover {
-        opacity: 0.95;
-        transition-duration: var(--dur-snap);
-        transition-timing-function: var(--ease-out-expo);
-      }
-
-      .stage-dot.active {
-        opacity: 1;
-        box-shadow: 0 0 0 2px var(--mv-paper), 0 0 0 3px var(--mv-accent);
-      }
-
       /* ---------- Framing: 3D View / On Mannequin / Lens Detail ---------- */
 
       .mode-list {
@@ -645,14 +634,21 @@
           height: 62vh;
         }
 
+        .close-plate {
+          top: 16px;
+          left: 16px;
+          padding: 6px 10px;
+          font-size: 9px;
+        }
+
         #brand {
-          top: 24px;
+          top: 54px;
           left: 24px;
           font-size: 13px;
         }
 
         #stage .breadcrumb {
-          top: 54px;
+          top: 84px;
           left: 24px;
         }
 
@@ -692,11 +688,12 @@
   <body>
     <div id="page">
       <div id="stage">
-        <canvas id="app"></canvas>
-        <a id="brand" href="/index.html">Maison Vellora</a>
-        <div class="breadcrumb" id="breadcrumb"></div>
+        <canvas id="app" data-exit="media"></canvas>
+        <a class="close-plate" href="/index.html" data-nav-direction="back" data-exit="text"><span class="glyph">✕</span> Close Plate</a>
+        <a id="brand" href="/index.html" data-nav-direction="back" data-exit="text">Thorne & Vale</a>
+        <div class="breadcrumb" id="breadcrumb" data-exit="text"></div>
       </div>
-      <aside id="controls">
+      <aside id="controls" data-exit="text">
         <div class="configurator-header">
           <div class="configurator-eyebrow">The Configurator</div>
           <h1 class="configurator-title" id="configurator-title"></h1>

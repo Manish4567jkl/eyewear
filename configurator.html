@@ -2,15 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Maison Vellora — The Ostrande</title>
+    <title>Thorne & Vale — The Ostrande</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Inter:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Italiana&family=Inter:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..500;1,6..96,400..500&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/styles/view-transitions.css" />
+    <link rel="stylesheet" href="/src/styles/loading-transition.css" />
     <style>
       :root {
         --text: #2a2622;
@@ -79,7 +81,7 @@
         top: 36px;
         left: 44px;
         z-index: 5;
-        font-family: "Playfair Display", serif;
+        font-family: "Italiana", serif;
         font-size: 15px;
         font-weight: 500;
         letter-spacing: 0.28em;
@@ -119,6 +121,28 @@
       #controls.panel-visible {
         opacity: 1;
         transform: translateX(0);
+      }
+
+      .configurator-header {
+        margin-bottom: 36px;
+      }
+
+      .configurator-eyebrow {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--brass);
+        margin-bottom: 10px;
+      }
+
+      .configurator-title {
+        font-family: "Bodoni Moda", serif;
+        font-style: italic;
+        font-size: clamp(28px, 3vw, 40px);
+        line-height: 1.05;
+        margin: 0;
+        color: var(--text);
       }
 
       /* ---------- Backdrop picker: which shader-based scene background is behind the product ---------- */
@@ -608,10 +632,15 @@
   <body>
     <div id="page">
       <div id="stage">
-        <canvas id="app"></canvas>
-        <a id="brand" href="/index.html">Maison Vellora</a>
+        <canvas id="app" data-exit="media"></canvas>
+        <a id="brand" href="/index.html" data-nav-direction="back" data-exit="text">Thorne & Vale</a>
       </div>
-      <aside id="controls"></aside>
+      <aside id="controls" data-exit="text">
+        <div class="configurator-header">
+          <div class="configurator-eyebrow">The Configurator</div>
+          <h1 class="configurator-title">The Ostrande</h1>
+        </div>
+      </aside>
     </div>
 
     <script type="module" src="/src/main.js"></script>

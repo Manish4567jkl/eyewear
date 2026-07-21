@@ -2,19 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Maison Vellora — On Mannequin</title>
+    <title>Thorne & Vale — On Mannequin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..500;1,6..96,400..500&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..500;1,6..96,400..500&family=Italiana&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="/src/styles/loading-transition.css" />
     <style>
       :root {
         --mv-paper: oklch(0.97 0.01 85);
         --mv-ink: oklch(0.18 0.01 40);
         --mv-accent: oklch(0.4 0.16 25);
+        /* The material strip FLOATS over the plate rather than insetting it, so engaging
+           Customize never shrinks the 3D scene. Only the caption lifts out of its way. */
+        --mv-strip-h: 92px; /* fixed height of the floating strip */
+        --mv-caption-lift: 0px; /* caption rises by this much while customizing */
+      }
+
+      /* Customize engaged: the strip claims its band and the stage shrinks to sit above it.
+         The renderer re-fits automatically — a ResizeObserver watches #mannequin-stage. */
+      body.is-customizing {
+        --mv-caption-lift: 92px;
       }
 
       * {
@@ -24,9 +36,13 @@
       html,
       body {
         margin: 0;
-        min-height: 100%;
-        background: var(--mv-paper);
-        color: var(--mv-ink);
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        /* Warm near-black so the split-second before the canvas fades in reads as the
+           room going dark, not a white flash — the baked scene itself covers this. */
+        background: #14110e;
+        color: var(--mv-paper);
         font-family: "Archivo", sans-serif;
       }
 
@@ -34,34 +50,75 @@
         color: inherit;
       }
 
-      .ph-header {
-        display: flex;
-        align-items: baseline;
-        gap: 12px;
-        padding: 24px 5%;
+      /* The plate: full-bleed left/right and to the top, stopping exactly where the material
+         strip begins. The renderer sizes itself from this element (see resize() in
+         mannequinScene.js), so the 3D shot genuinely ends above the strip — the strip is
+         never drawn over the product. */
+      #mannequin-stage {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+
+      #mannequin-app {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      /* Soft dark-to-transparent scrims at the top and bottom edges only, so the
+         floating text keeps its contrast over whatever the scene is doing behind it
+         without dimming the bright center of the room. */
+      .mv-scrim {
+        position: fixed;
+        left: 0;
+        right: 0;
+        pointer-events: none;
+        z-index: 5;
+      }
+      .mv-scrim--top {
+        top: 0;
+        height: 24vh;
+        background: linear-gradient(to bottom, rgba(20, 17, 14, 0.5), rgba(20, 17, 14, 0));
+      }
+      /* Stops at the strip's hairline, so the scrim shades the plate only. */
+      .mv-scrim--bottom {
+        bottom: 0;
+        height: 28vh;
+        background: linear-gradient(to top, rgba(20, 17, 14, 0.6), rgba(20, 17, 14, 0));
+      }
+
+      /* Shared legibility treatment for every floating overlay label. */
+      .mv-overlay {
+        position: fixed;
+        z-index: 10;
+        text-shadow: 0 1px 22px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.35);
+      }
+
+      /* Pre-JS baseline for everything revealStage() choreographs on boot (see
+         mannequinScene.js) — without this, the labels would flash visible for a frame
+         before the module script runs and hides them for its own reveal. */
+      .reveal {
+        opacity: 0;
       }
 
       .ph-brand {
-        font-family: "Bodoni Moda", serif;
+        top: 26px;
+        left: clamp(20px, 5vw, 56px);
+        font-family: "Italiana", serif;
         font-size: 17px;
         text-decoration: none;
+        color: var(--mv-paper);
       }
 
-      .ph-main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 28px;
-        min-height: calc(100vh - 80px);
-        padding: 40px 6% 80px;
-        text-align: center;
-      }
-
-      #product-image {
-        width: min(360px, 80vw);
-        aspect-ratio: 4 / 3;
-        border: 1px solid oklch(0.18 0.01 40 / 0.2);
+      /* Editorial caption, bottom-left: mono eyebrow over the italic display title. */
+      .mv-caption {
+        /* Raised clear of the strip so the existing caption keeps floating on the plate. */
+        bottom: calc(var(--mv-caption-lift) + clamp(20px, 4vh, 40px));
+        left: clamp(20px, 5vw, 56px);
+        max-width: min(560px, 80vw);
       }
 
       .ph-label {
@@ -69,50 +126,376 @@
         font-size: 10px;
         letter-spacing: 0.2em;
         text-transform: uppercase;
-        color: var(--mv-accent);
-        margin-bottom: 12px;
+        color: oklch(0.82 0.06 65);
+        margin-bottom: 10px;
       }
 
       .ph-title {
         font-family: "Bodoni Moda", serif;
         font-style: italic;
-        font-size: clamp(28px, 4vw, 44px);
+        font-size: clamp(30px, 4.5vw, 52px);
+        line-height: 1.02;
         margin: 0;
+        color: var(--mv-paper);
       }
 
-      .ph-note {
+      /* Room switcher — thin bordered mono text buttons, consistent with the site's
+         eyebrow/label furniture rather than generic app buttons. Built from the room list
+         in mannequinScene.js, so a new room adds a button with no markup change. */
+      .mv-room-switcher {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 18px;
+      }
+
+      .mv-room-btn {
         font-family: "Space Mono", monospace;
-        font-size: 11px;
-        letter-spacing: 0.14em;
+        font-size: 10px;
+        letter-spacing: 0.18em;
         text-transform: uppercase;
+        color: var(--mv-paper);
+        background: rgba(20, 17, 14, 0.28);
+        border: 1px solid rgba(242, 236, 225, 0.32);
+        padding: 8px 14px;
+        cursor: pointer;
+        -webkit-backdrop-filter: blur(3px);
+        backdrop-filter: blur(3px);
+        transition: border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+          color 220ms cubic-bezier(0.16, 1, 0.3, 1), background-color 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .mv-room-btn:hover {
+        border-color: rgba(242, 236, 225, 0.62);
+      }
+
+      .mv-room-btn.is-active {
+        border-color: oklch(0.82 0.06 65);
+        color: oklch(0.88 0.08 65);
+        background: rgba(255, 171, 99, 0.12);
+      }
+
+      .mv-room-btn:disabled {
         opacity: 0.55;
+        cursor: default;
       }
 
-      .ph-back {
+      /* ------------------------------------------------------------------
+         Per-room strip theming. The customize panel takes its palette from the
+         room it is sitting in, so it reads as part of that space rather than one
+         generic bar bolted onto three different interiors. Every colour in the
+         strip below resolves through these tokens — switching rooms just swaps
+         the token values (mannequinScene.js sets body[data-room]).
+         ------------------------------------------------------------------ */
+      body {
+        /* Studio 1 — charcoal room, warm gold cove strips: near-black + gold. */
+        --strip-bg: #14110e;
+        --strip-line: rgba(242, 236, 225, 0.16);
+        --strip-ink: oklch(0.97 0.01 85);
+        --strip-accent: oklch(0.88 0.08 65);
+        --strip-accent-soft: oklch(0.82 0.06 65);
+        --strip-ring: rgba(242, 236, 225, 0.45);
+        --strip-ring-hover: rgba(242, 236, 225, 0.85);
+      }
+
+      /* Studio 2 — bright white studio: the panel inverts to pale stone with dark
+         ink and a bronze accent, so it belongs to a light room instead of punching
+         a black hole into it. */
+      body[data-room="studio2"] {
+        --strip-bg: #ece5da;
+        --strip-line: rgba(46, 34, 26, 0.18);
+        --strip-ink: oklch(0.30 0.02 55);
+        --strip-accent: oklch(0.50 0.10 60);
+        --strip-accent-soft: oklch(0.56 0.08 60);
+        --strip-ring: rgba(46, 34, 26, 0.32);
+        --strip-ring-hover: rgba(46, 34, 26, 0.62);
+      }
+
+      /* Studio 3 — dusty rose room with gold rods: deep plum ground and a rose-gold
+         accent, picking up the room's own mauve rather than its neighbours' gold. */
+      body[data-room="studio3"] {
+        --strip-bg: #2a1a21;
+        --strip-line: rgba(245, 220, 226, 0.18);
+        --strip-ink: oklch(0.94 0.02 25);
+        --strip-accent: oklch(0.86 0.09 45);
+        --strip-accent-soft: oklch(0.78 0.08 42);
+        --strip-ring: rgba(245, 220, 226, 0.42);
+        --strip-ring-hover: rgba(245, 220, 226, 0.82);
+      }
+
+      /* ------------------------------------------------------------------
+         Material strip — the caption line under the plate. It is a BAND, not
+         an overlay: the 3D stage is inset above it (see #mannequin-stage), so
+         by construction nothing here can ever cross the product shot.
+
+         Deliberately plain: a hairline rule, small-caps mono labels in the
+         same treatment as the plate eyebrow, tick separators, and bare
+         circles. No fills, cards, pills, shadows, glows or icons — and every
+         transition is opacity-only.
+
+         Scoped to this page; the full Configurator keeps its own panel.
+         ------------------------------------------------------------------ */
+      .mv-strip {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: var(--mv-strip-h);
+        z-index: 10;
+        display: flex;
+        align-items: flex-start;
+        padding: 14px clamp(20px, 5vw, 56px) 0;
+        /* Solid band, matching the page background — the same flat dark look as before. It now
+           sits ON TOP of a full-bleed scene rather than insetting it, so the look is unchanged
+           but the 3D composition is no longer squeezed. */
+        background: var(--strip-bg);
+        border-top: 1px solid var(--strip-line);
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 150ms linear, background-color 320ms linear, border-color 320ms linear;
+      }
+
+      body.is-customizing .mv-strip {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* Plate metadata and the part labels share one row, so the strip reads as a single
+         continuous caption system rather than two stacked bars. */
+      .mv-strip-meta,
+      .mv-part-label,
+      .mv-part-tick {
         font-family: "Space Mono", monospace;
-        font-size: 11px;
-        letter-spacing: 0.08em;
+        font-size: 10px;
+        letter-spacing: 0.2em;
         text-transform: uppercase;
-        text-decoration: none;
-        color: var(--mv-accent);
-        border-bottom: 1px solid var(--mv-accent);
-        padding-bottom: 2px;
+      }
+
+      .mv-strip-meta {
+        color: var(--strip-accent-soft);
+        opacity: 0.75;
+        white-space: nowrap;
+        line-height: 1.6;
+      }
+
+      /* Centred independently of the metadata so the labels stay optically centred in the
+         strip regardless of how long the plate caption is. */
+      .mv-parts {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+      }
+
+      .mv-part-tick {
+        color: var(--strip-ink);
+        opacity: 0.3;
+        margin: 0 13px;
+        line-height: 1.6;
+      }
+
+      /* A label is a bare text button: no background, no border, no padding box. */
+      .mv-part-label {
+        position: relative;
+        appearance: none;
+        background: none;
+        border: 0;
+        padding: 0 0 4px;
+        color: var(--strip-ink);
+        opacity: 0.62;
+        line-height: 1.6;
+        cursor: pointer;
+        /* Opacity-only, per the motion rule — the underline is a border, not a transform. */
+        transition: opacity 150ms linear;
+      }
+
+      .mv-part-label:hover {
+        opacity: 0.9;
+      }
+
+      /* Active: a single thin underline in the site's gold accent. */
+      .mv-part-label.is-active {
+        opacity: 1;
+        color: var(--strip-accent);
+        border-bottom: 1px solid var(--strip-accent-soft);
+      }
+
+      .mv-part-label:focus-visible {
+        outline: 1px solid var(--strip-accent);
+        outline-offset: 3px;
+      }
+
+      /* Swatch row — sits directly beneath its own label, fades on opacity alone. */
+      .mv-swatch-row {
+        position: absolute;
+        top: calc(100% + 16px);
+        left: 50%;
+        /* Static centring transform; never animated. */
+        transform: translateX(-50%);
+        display: flex;
+        /* Small gap on purpose: even spacing comes from the fixed swatch width below, not
+           from this. Items are equal-width, so the visual rhythm is gap + width, and a
+           large gap on top of a 76px item reads as scattered rather than as a set. */
+        gap: 8px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 150ms linear;
+        /* Palettes now run to a dozen-plus finishes, so the row is a scroller rather
+           than a fixed handful. Capped to the viewport so it never runs off-screen,
+           and shrink-to-fit below that so short rows (hinge, text) stay centred. */
+        max-width: min(88vw, 1080px);
+        width: max-content;
+        overflow-x: auto;
+        overflow-y: hidden;
+        /* Room for the active swatch's offset selection ring, which would otherwise be
+           clipped by the scroll container's edge. */
+        padding: 7px 6px 2px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--strip-ring) transparent;
+        overscroll-behavior-x: contain;
+      }
+
+      .mv-swatch-row::-webkit-scrollbar {
+        height: 3px;
+      }
+
+      .mv-swatch-row::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .mv-swatch-row::-webkit-scrollbar-thumb {
+        background: var(--strip-ring);
+        border-radius: 2px;
+      }
+
+      /* A scroller must not compress its items to fit — they scroll instead. */
+      .mv-swatch-row > .mv-swatch {
+        flex: 0 0 auto;
+      }
+
+      .mv-part-label.is-active .mv-swatch-row {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* A swatch is a circle plus its own name — the finish is identified, not left as an
+         anonymous colour the user has to decode. The button itself is a bare wrapper: no
+         background, border, or padding box of its own.
+
+         FIXED WIDTH is what makes the row space evenly. Each swatch is a column, and its
+         width was previously set by its NAME — which runs from "BLACK" to "GRADIENT SMOKE".
+         The circle sits centred in that box, so circle-to-circle distance tracked label
+         length and the row looked randomly spaced. Pinning the width decouples the two:
+         every circle now sits on the same pitch regardless of what it is called. */
+      .mv-swatch {
+        appearance: none;
+        background: none;
+        border: 0;
+        padding: 0;
+        width: 76px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 9px;
+        cursor: pointer;
+      }
+
+      /* Colour fill plus a 1px ring. No shadow, no glow, no scaling. */
+      .mv-swatch-ring {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid var(--strip-ring);
+        background: var(--swatch-fill, #555);
+        transition: border-color 150ms linear;
+      }
+
+      .mv-swatch:hover .mv-swatch-ring {
+        border-color: var(--strip-ring-hover);
+      }
+
+      /* Selected: an offset ring floating clear of the swatch, in the room's accent.
+         This overrides the row's original "no shadow, no glow, no scaling" rule, which left
+         selection reading as a 1px-to-2px border change — invisible in practice, especially
+         on a dark swatch where the border has almost nothing to contrast against. The two
+         box-shadows are not a glow: the first paints a gap in the strip's own background,
+         the second draws a hard 2px ring outside it, so the result is a crisp concentric
+         outline rather than a bloom. It sits OUTSIDE the swatch so it never tints the
+         colour being previewed. */
+      .mv-swatch.is-active .mv-swatch-ring {
+        border-color: var(--strip-accent);
+        box-shadow:
+          0 0 0 3px var(--strip-bg),
+          0 0 0 5px var(--strip-accent);
+      }
+
+      /* Wraps instead of forcing the column wider — that nowrap was what coupled item width
+         to label length. Two lines of headroom is reserved unconditionally so a one-line and
+         a two-line name still leave their circles on the same baseline. */
+      .mv-swatch-name {
+        font-family: "Space Mono", monospace;
+        font-size: 8px;
+        line-height: 1.4;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        text-align: center;
+        color: var(--strip-ink);
+        opacity: 0.5;
+        white-space: normal;
+        min-height: 2.8em;
+        transition: opacity 150ms linear, color 150ms linear;
+      }
+
+      .mv-swatch:hover .mv-swatch-name {
+        opacity: 0.85;
+      }
+
+      .mv-swatch.is-active .mv-swatch-name {
+        opacity: 1;
+        color: var(--strip-accent);
+        font-weight: 700;
+      }
+
+      .mv-swatch:focus-visible {
+        outline: 1px solid var(--strip-accent);
+        outline-offset: 3px;
       }
     </style>
   </head>
   <body data-product-slug="the-ostrande">
-    <header class="ph-header">
-      <a class="ph-brand" href="/index.html">Maison Vellora</a>
-    </header>
-    <main class="ph-main">
-      <div id="product-image"></div>
-      <div>
-        <div class="ph-label">PLATE 03 — THE CONFIGURATOR</div>
-        <h1 class="ph-title">On Mannequin</h1>
+    <div id="mannequin-stage" data-exit="media">
+      <canvas id="mannequin-app"></canvas>
+    </div>
+
+    <div class="mv-scrim mv-scrim--top" aria-hidden="true"></div>
+    <div class="mv-scrim mv-scrim--bottom" aria-hidden="true"></div>
+
+    <a class="ph-brand mv-overlay reveal" href="/index.html" data-nav-direction="back" data-exit="text">Thorne & Vale</a>
+
+    <div class="mv-caption mv-overlay">
+      <div class="ph-label reveal">PLATE 03 — THE CONFIGURATOR</div>
+      <h1 class="ph-title reveal">On Mannequin</h1>
+      <div class="mv-room-switcher reveal" id="room-switcher" role="group" aria-label="Choose studio room"></div>
+      <div class="mv-room-switcher reveal" id="glasses-switcher" role="group" aria-label="Choose frame"></div>
+      <div class="mv-room-switcher reveal" id="customize-bar">
+        <button type="button" class="mv-room-btn" id="customize-toggle" aria-pressed="false" aria-controls="material-strip">
+          Customize
+        </button>
       </div>
-      <p class="ph-note">Coming soon</p>
-      <a class="ph-back" href="/index.html">← Back to Maison Vellora</a>
-    </main>
-    <script type="module" src="/src/placeholderView.js"></script>
+    </div>
+
+    <!-- Material strip: plate metadata and the per-part labels on one caption line, with each
+         part's swatch row fading in beneath its own label. Built per SKU in mannequinScene.js
+         from the parts that model actually exposes. -->
+    <!-- Deliberately NOT .reveal: its visibility is owned by the customize gate, and a boot
+         reveal tween would write an inline opacity that overrides it. -->
+    <div class="mv-strip" id="material-strip">
+      <div class="mv-strip-meta">Plate 03 — On Mannequin</div>
+      <div class="mv-parts" id="material-parts" role="group" aria-label="Customize part"></div>
+    </div>
+
+    <script type="module" src="/src/mannequinScene.js"></script>
   </body>
 </html>

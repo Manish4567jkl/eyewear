@@ -1,6 +1,7 @@
 import { gsap, SplitText, initSmoothScroll, EASE, DUR } from "./motion.js";
 import { swatchGradient } from "./swatchGradient.js";
 import { initNav } from "./nav.js";
+import { initPageTransitionLinks, revealStage } from "./pageTransition.js";
 import { COLLECTIONS, PRODUCTS, getCollection, getCollectionProducts, formatPrice } from "./data/products.js";
 
 const lenis = initSmoothScroll();
@@ -11,6 +12,7 @@ lenis.on("scroll", ({ scroll }) => {
 });
 
 initNav();
+initPageTransitionLinks();
 
 function slugFromPath() {
   const match = window.location.pathname.match(/\/collections\/([^/]+)\/?$/);
@@ -33,7 +35,7 @@ const slug = slugFromPath();
 const isAllView = slug === "all";
 const collection = isAllView ? ALL_EYEWEAR : getCollection(slug);
 
-document.title = collection ? `Maison Vellora — ${collection.name}` : "Maison Vellora — Collection Not Found";
+document.title = collection ? `Thorne & Vale — ${collection.name}` : "Thorne & Vale — Collection Not Found";
 
 const breadcrumbEl = document.querySelector("#breadcrumb");
 const eyebrowEl = document.querySelector("#collection-eyebrow");
@@ -54,7 +56,7 @@ const COLLECTION_TONE = {
 };
 
 if (!collection) {
-  breadcrumbEl.innerHTML = `<a href="/index.html">Home</a>`;
+  breadcrumbEl.innerHTML = `<a href="/index.html" data-nav-direction="back">Home</a>`;
   eyebrowEl.textContent = "Not Found";
   titleEl.textContent = "Collection Not Found";
   descEl.textContent = "That collection doesn't exist. Try one of the collections below.";
@@ -64,7 +66,7 @@ if (!collection) {
     (c) => `<a class="product-card" href="/collections/${c.slug}/"><h3 class="product-name">${c.name}</h3></a>`,
   ).join("");
 } else {
-  breadcrumbEl.innerHTML = `<a href="/index.html">Home</a><span class="sep">/</span><span class="current">${collection.name}</span>`;
+  breadcrumbEl.innerHTML = `<a href="/index.html" data-nav-direction="back">Home</a><span class="sep">/</span><span class="current">${collection.name}</span>`;
   eyebrowEl.textContent = collection.eyebrow;
   titleEl.textContent = collection.name;
   descEl.textContent = collection.description;
@@ -109,7 +111,7 @@ if (!collection) {
 
   function cardHtml(product, sizeClass) {
     return `
-      <a class="product-card ${sizeClass}" href="/products/${product.slug}/">
+      <a class="product-card ${sizeClass}" href="/products/${product.slug}/" data-lead>
         <div class="product-swatch" style="background:${swatchGradient(product)}; view-transition-name: product-${product.slug}">
           <span class="product-type-tag">${product.type === "optical" ? "Optical" : "Sunglasses"}</span>
           <span class="product-swatch-veil"><span class="product-swatch-cta">View ${product.name} →</span></span>
@@ -218,6 +220,9 @@ if (!collection) {
   renderGrid();
 }
 
-gsap.from("#collection-title", { opacity: 0, y: 18, duration: DUR.revealLg, ease: EASE.entrance, delay: 0.1 });
-gsap.from("#collection-desc", { opacity: 0, y: 14, duration: DUR.reveal, ease: EASE.entrance, delay: 0.25 });
-gsap.to("#filter-tabs", { opacity: 1, duration: DUR.reveal, ease: EASE.entrance, delay: 0.35 });
+revealStage({
+  eyebrow: "#collection-eyebrow",
+  headline: "#collection-title",
+  headlineType: "words",
+  body: ["#breadcrumb", "#collection-desc", "#filter-tabs"],
+});

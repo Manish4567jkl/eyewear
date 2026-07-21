@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thorne & Vale — The Night Editor, Reading Study</title>
+    <meta
+      name="description"
+      content="Dossier N°01 — The Night Editor. A reading study in six proof plates — move the lens across the page to find what the margins are hiding."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..500;1,6..96,400..500&family=Italiana&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400;700&family=Inter:wght@400;500&family=Caveat:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles/base.css" />
+    <link rel="stylesheet" href="/src/styles/view-transitions.css" />
+    <link rel="stylesheet" href="/src/styles/nightEditor.css" />
+  </head>
+  <body>
+    <div class="breadcrumb reveal" data-exit="text">
+      <a href="/index.html" data-nav-direction="back">Home</a>
+      <span class="sep">/</span>
+      <span class="current">The Night Editor</span>
+    </div>
+
+    <main class="ne-page">
+      <section class="ne-hero" data-exit="text">
+        <div class="ne-eyebrow eyebrow reveal">Dossier N°01 — Reading Study</div>
+        <h1 class="ne-title reveal">The Night Editor</h1>
+        <p class="ne-tagline reveal">Closes the proof at 2am.</p>
+      </section>
+
+      <section class="ne-study">
+        <div class="ne-panel reveal" id="ne-panel">
+          <aside class="ne-sidebar">
+            <div class="ne-sidebar-top">
+              <div class="ne-kicker">Thorne &amp; Vale</div>
+              <div class="ne-dossier-no">Dossier N°01</div>
+              <h2 class="ne-sidebar-title">The Night Editor</h2>
+              <div class="ne-rule"></div>
+              <p class="ne-bio">
+                Closes the proof at 2am, six nights a week. Needs glare cut without color shift under a desk lamp.
+              </p>
+            </div>
+            <dl class="ne-meta">
+              <div class="ne-meta-row">
+                <dt>Time</dt>
+                <dd>02:14 AM</dd>
+              </div>
+              <div class="ne-meta-row">
+                <dt>Desk Lamp</dt>
+                <dd>2700K, warm</dd>
+              </div>
+              <div class="ne-meta-row">
+                <dt>Focus</dt>
+                <dd>Final proof</dd>
+              </div>
+            </dl>
+            <div class="ne-sidebar-bottom">
+              <div class="ne-colophon">T&amp;V</div>
+              <div class="ne-colophon-label">Reading Study 01</div>
+            </div>
+          </aside>
+
+          <div class="ne-main">
+            <nav class="ne-plates" id="ne-plates" aria-label="Reading plates"></nav>
+
+            <div class="ne-reading" id="ne-reading">
+              <div class="ne-watermark" id="ne-watermark" aria-hidden="true"></div>
+              <div class="ne-lamp-glow" id="ne-lamp-glow" aria-hidden="true"></div>
+              <div class="ne-text" id="ne-text"></div>
+              <div class="ne-veil" id="ne-veil" aria-hidden="true"></div>
+              <div class="ne-marks" id="ne-marks"></div>
+              <p class="ne-hint" id="ne-hint">Move the lens across the page.</p>
+            </div>
+          </div>
+
+          <aside class="ne-detail" id="ne-detail"></aside>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/nightEditor.js"></script>
+  </body>
+</html>

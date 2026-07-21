@@ -4,7 +4,7 @@ import { loadModel } from "./loader.js";
 import { loadStudioEnvironment, createShadowCatcherGround } from "./environment.js";
 import { createFrameMaterial } from "./frameMaterial.js";
 import { createLensMaterial } from "./lensMaterial.js";
-import { createAcetateMaterial } from "./acetateMaterial.js";
+import { createAcetateMaterial, fitAcetatePatternScale } from "./acetateMaterial.js";
 import { createTextMaterial } from "./textMaterial.js";
 import { classifyMesh } from "./meshCategoryMap.js";
 
@@ -110,9 +110,11 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
   }
 
   function applyMaterials(model, url) {
+    const acetateMeshes = [];
     model.traverse((object) => {
       if (!object.isMesh) return;
       const category = classifyMesh(object, url);
+      if (category === "acetate") acetateMeshes.push(object);
       if (category === "lens") object.material = lensMaterial;
       else if (category === "hinge") object.material = hingeMaterial;
       else if (category === "acetate") object.material = acetateMaterial;
@@ -123,6 +125,10 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
       object.castShadow = true;
       object.receiveShadow = true;
     });
+
+    // Acetate pigment is authored in "blotches across the frame", so it needs the
+    // frame's real object-space size before it renders.
+    fitAcetatePatternScale(acetateMaterial, acetateMeshes);
   }
 
   async function load(nextProduct) {
@@ -133,6 +139,11 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
 
     frameMaterial = isAcetate ? null : createFrameMaterial(nextProduct.frameFinish);
     acetateMaterial = isAcetate ? createAcetateMaterial(nextProduct.acetateColor) : null;
+    // This viewer renders onto an alpha canvas that composites over the page, so it has
+    // no scene.background and no environment geometry — nothing for a transmission pass
+    // to refract. Acetate falls back to its opaque pigment here rather than sampling an
+    // empty pass and rendering as a dark silhouette.
+    acetateMaterial?.setTransmissionEnabled(false);
     lensMaterial = createLensMaterial(nextProduct.lensTint);
     hingeMaterial = createFrameMaterial(isAcetate ? (nextProduct.hingeFinish ?? "gunmetal") : nextProduct.frameFinish);
     handlesMaterial = isAcetate ? null : createFrameMaterial(nextProduct.frameFinish);
@@ -176,6 +187,8 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
 
   function tick() {
     raf = requestAnimationFrame(tick);
+    // Skip all work while the tab is backgrounded — nothing is visible to update anyway.
+    if (document.hidden) return;
     controls.update();
     renderer.render(scene, camera);
   }

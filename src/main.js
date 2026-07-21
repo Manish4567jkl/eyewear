@@ -16,11 +16,19 @@ import {
 } from "./swatchRenderer.js";
 import { createBackdrop, BACKDROP_PRESETS, getBackdropThumbnail } from "./backdrop.js";
 import { gsap, EASE, DUR } from "./motion.js";
+import { createLoadingTransition } from "./loadingTransition.js";
+import { initPageTransitionLinks, revealStage } from "./pageTransition.js";
+
+initPageTransitionLinks();
 
 const MODEL_URL = "/models/aviator-glass3.glb";
 
 const canvas = document.querySelector("#app");
 const stageEl = document.querySelector("#stage");
+
+// Hidden until the model + environment are actually ready — see the loading
+// transition wired around init(), below.
+canvas.style.opacity = "0";
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -31,18 +39,17 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.VSMShadowMap;
-// The backdrop is rendered as its own pass before the product scene each frame (see
-// animate() below), so the canvas can't be auto-cleared between the two — otherwise
-// the second render() call would wipe out the backdrop pass that just ran.
-renderer.autoClear = false;
+// scene.background is set each frame from the backdrop capture (see animate()), so
+// three clears and draws it itself — autoClear stays on, unlike the previous
+// manual two-pass composite this replaced.
+renderer.autoClear = true;
 
 const scene = new THREE.Scene();
 
 // A shader-based backdrop, entirely separate from scene.environment (which is what
-// actually lights the metal/lens materials via IBL) — see backdrop.js. It has its own
-// scene/camera and is drawn first each frame; scene.background is deliberately left
-// unset so the product scene renders transparent over whatever the backdrop pass left
-// in the color buffer.
+// actually lights the materials via IBL) — see backdrop.js. It has its own scene/camera
+// and is captured to a texture each frame, which is then assigned as scene.background.
+// It still never feeds scene.environment, so it cannot affect IBL.
 const backdrop = createBackdrop();
 
 // Modest global default. The metal materials (frame/hinge/handles) now get their own
@@ -74,8 +81,10 @@ function updateStageSize() {
 updateStageSize();
 new ResizeObserver(updateStageSize).observe(stageEl);
 
-// Real studio HDRI drives PBR reflections/ambient lighting on the frame metal.
-loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
+// Real studio HDRI drives PBR reflections/ambient lighting on the frame metal. Captured
+// (rather than a bare fire-and-forget chain) so the loading transition below can gate
+// on it alongside the model.
+const environmentPromise = loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
   .then((envMap) => {
     scene.environment = envMap;
     // Explicit per-material envMap so each metal material's own (higher) envMapIntensity
@@ -260,12 +269,42 @@ async function init() {
   }
 }
 
-init();
+// Shown the instant this page's script runs, dismissed only once both the model and
+// the environment have actually resolved — never on a guessed timeout.
+const sceneLoader = createLoadingTransition({ palette: "light", plateNumber: "03" });
+
+Promise.all([init(), environmentPromise]).then(() => {
+  // Force shader compilation for these materials now, synchronously, before the
+  // reveal — otherwise it happens lazily on the next animate() frame after the canvas
+  // is already visible, and can itself stall for seconds on top of the load promise.
+  renderer.compile(backdrop.scene, backdrop.camera);
+  scene.background = backdrop.capture(renderer);
+  renderer.compile(scene, camera);
+  renderer.render(scene, camera);
+
+  gsap.to(canvas, { opacity: 1, duration: DUR.revealLg, ease: EASE.entrance });
+  sceneLoader.hide();
+  controlsPanel.classList.add("panel-visible");
+  revealStage({
+    eyebrow: ".configurator-eyebrow",
+    headline: ".configurator-title",
+    body: [".backdrop-picker", ".rail-tabs", ".stage-picker"],
+  });
+});
 
 const timer = new THREE.Timer();
 
+// The backdrop capture is a full extra render pass (see backdrop.js) on top of the main
+// scene render, every frame. Its own drift is deliberately "barely perceptible" (see its
+// shader comment), so re-capturing on every other frame instead of every frame halves that
+// pass's cost with no visible difference — the texture just persists between captures.
+let backdropTexture = null;
+let backdropFrame = 0;
+
 function animate() {
   requestAnimationFrame(animate);
+  // Skip all work while the tab is backgrounded — nothing is visible to update anyway.
+  if (document.hidden) return;
   timer.update();
   const delta = timer.getDelta();
   backdrop.update(delta);
@@ -276,14 +315,16 @@ function animate() {
   textMaterial.updateTextTween(delta);
   controls.update();
 
-  // Two passes into the same (manually-cleared) color buffer: the backdrop fills the
-  // whole canvas first, then the product scene draws over it. Depth is cleared in
-  // between so the product's own depth testing among its meshes starts fresh — the
-  // backdrop quad itself never writes depth (see backdrop.js), so this is purely to be
-  // explicit/defensive, not to fix any actual z-fighting.
-  renderer.clear(true, true, true);
-  renderer.render(backdrop.scene, backdrop.camera);
-  renderer.clearDepth();
+  // The backdrop is captured to a texture and assigned as scene.background rather than
+  // being blitted as a manual pre-pass. Visually identical — three draws a background
+  // texture as a fullscreen quad ahead of the scene — but it also makes the backdrop
+  // visible to the transmission pass, which is what lets translucent acetate actually
+  // refract what is behind it.
+  backdropFrame++;
+  if (!backdropTexture || backdropFrame % 2 === 0) {
+    backdropTexture = backdrop.capture(renderer);
+  }
+  scene.background = backdropTexture;
   renderer.render(scene, camera);
 }
 
@@ -746,9 +787,4 @@ const materialRail = buildMaterialRail(controlsPanel, railSections, { onSelectio
 buildStagePicker(controlsPanel, { onChange: () => materialRail.rerenderActive() });
 controlsPanel.appendChild(summaryEl);
 updateSummary();
-
-// Single orchestrated entrance for the whole card — no per-tile stagger.
-requestAnimationFrame(() => {
-  controlsPanel.classList.add("panel-visible");
-});
 

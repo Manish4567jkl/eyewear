@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Thorne and Vale mark: a thorned branch in a medallion, in the site's own ink,
+       brass and cream tones from base.css. A thorn for Thorne, the branch's climb from
+       root to bud for Vale. -->
+  <circle cx="32" cy="32" r="30" fill="#0c0b0a" />
+  <circle cx="32" cy="32" r="27" fill="none" stroke="#a6825a" stroke-width="1.8" />
+  <g fill="none" stroke="#a6825a" stroke-linecap="round">
+    <path d="M20 46 C24 40 22 34 27 29 C32 24 30 19 40 15" stroke-width="2.6" />
+    <path d="M21 44 L15 45" stroke-width="2.2" />
+    <path d="M24 39 L17 37" stroke-width="2.2" />
+    <path d="M26 31 L33 29" stroke-width="2.2" />
+    <path d="M33 21 L27 18" stroke-width="2.2" />
+  </g>
+  <circle cx="40" cy="15" r="2.4" fill="#f2ece1" />
+</svg>

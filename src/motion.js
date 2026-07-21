@@ -12,23 +12,29 @@ gsap.registerPlugin(ScrollTrigger, CustomEase, SplitText);
 // for the handful of reveals that should read as having physical weight.
 CustomEase.create("expoOut", "0.16, 1, 0.3, 1");
 CustomEase.create("overshoot", "0.34, 1.56, 0.64, 1");
+CustomEase.create("quintIn", "0.7, 0, 0.84, 0");
 
 export const EASE = {
   entrance: "expoOut", // aggressive-decel entrance for text/images — the default "in" ease
   overshoot: "overshoot", // small over-travel + settle, for the reveals that should feel weighted
+  exit: "quintIn", // accelerate-away curve for page-leave choreography — the mirror of "entrance"
   hoverIn: "power4.out", // hover/tilt "snap toward" — short, sharp deceleration
   hoverOut: "power2.out", // hover/tilt "release" — a touch softer/slower than the snap in
   scrub: "none", // linear — a scrub tween should never re-ease on top of the scroll input itself
 };
 
 // Durations in seconds. Kept short and named so a call site reads as intent, not a
-// magic number: micro-interactions are 150–250ms, entrances are capped at ~0.6–0.7s,
-// nothing "fades" for a full second.
+// magic number: micro-interactions are 150–250ms, page-leave/entrance choreography
+// runs slower — this is a real cross-document navigation with a hard cut in the
+// middle (no root cross-fade, see view-transitions.css), so exit and entrance both
+// need enough presence on their own to read as one continuous motion rather than
+// a blink either side of the cut.
 export const DUR = {
   snap: 0.15, // hover-in, tilt tracking
   release: 0.25, // hover-out, tilt reset
-  reveal: 0.5, // text/small-element entrances
-  revealLg: 0.65, // image/panel entrances
+  exit: 0.48, // page-leave choreography, before the real navigation fires
+  reveal: 0.62, // text/small-element entrances
+  revealLg: 0.85, // image/panel entrances
 };
 
 /**

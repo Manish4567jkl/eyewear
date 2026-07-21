@@ -7,42 +7,37 @@ const TWEEN_DURATION = 0.8; // seconds
 // are the standard measured spectral approximations. baseColor is blended in only as a
 // subtle tint on top (see FRAME_F0_TINT_AMOUNT below), not as the dominant color source.
 const FRAME_PRESETS = {
-  // Values below are tuned for *swatch-scale distinction*, not just per-preset physical
-  // accuracy in isolation — at a 56–130px preview sphere, several of these read as
-  // "similarly bright metallic blob" when their roughness is low enough that the render
-  // is almost entirely a tone-mapped specular highlight (which compresses toward white
-  // regardless of f0 hue). Roughness nudged up a touch and f0/baseColor pushed further
-  // apart per-metal so each one's actual hue carries past the highlight, at a glance,
-  // at small size — the ACES/exposure pipeline itself (swatchRenderer.js) is unchanged.
+  // Seven finishes. Values are tuned for *swatch-scale distinction* as well as
+  // per-preset accuracy: at a small preview sphere, a low-roughness metal is almost
+  // entirely a tone-mapped specular highlight, which compresses toward white regardless
+  // of f0 hue. Roughness and f0 are pushed apart per-metal so each one's hue carries at
+  // a glance. The old palette had four near-identical greys competing for the same slot
+  // (gunmetal / graphite / titanium / matteBlack); this keeps the three that differ by
+  // lightness AND finish, and spends the freed slots on warm metals instead.
   polishedGold: {
     baseColor: new THREE.Color(0xffc94a),
     f0: new THREE.Color(1.0, 0.766, 0.336),
     metalness: 1.0,
     roughness: 0.09,
   },
-  brushedSilver: {
-    baseColor: new THREE.Color(0xb9c1c9), // cooled from a near-neutral grey so it doesn't
-    f0: new THREE.Color(0.88, 0.93, 0.98), // read as "dim gold" next to polishedGold
-    metalness: 1.0,
-    roughness: 0.46, // pushed further into "brushed/matte" vs. gold's mirror gloss
-  },
-  gunmetal: {
-    baseColor: new THREE.Color(0x20242a), // noticeably darker/cooler — was reading too
-    f0: new THREE.Color(0.09, 0.1, 0.13), // close to titanium/graphite at a glance
-    metalness: 1.0,
-    roughness: 0.3,
-  },
   roseGold: {
-    baseColor: new THREE.Color(0xdb8873), // more saturated pink, not pale peach — was
-    f0: new THREE.Color(1.0, 0.58, 0.52), // reading too close to champagne/copper
+    baseColor: new THREE.Color(0xdb8873),
+    f0: new THREE.Color(1.0, 0.58, 0.52),
     metalness: 1.0,
     roughness: 0.16,
   },
-  matteBlack: {
-    baseColor: new THREE.Color(0x1a1a1a),
-    f0: new THREE.Color(0.15, 0.15, 0.16), // low-metalness coated finish, not a pure metal
-    metalness: 0.3,
-    roughness: 0.42,
+  // Warm and considerably darker than the golds — the antique hardware end of the range.
+  bronze: {
+    baseColor: new THREE.Color(0x8c6234),
+    f0: new THREE.Color(0.71, 0.51, 0.32),
+    metalness: 1.0,
+    roughness: 0.34,
+  },
+  brushedSilver: {
+    baseColor: new THREE.Color(0xb9c1c9), // cooled so it doesn't read as "dim gold"
+    f0: new THREE.Color(0.88, 0.93, 0.98),
+    metalness: 1.0,
+    roughness: 0.46, // brushed/matte, against polishedGold's mirror gloss
   },
   titanium: {
     baseColor: new THREE.Color(0xb8bcc2),
@@ -50,23 +45,17 @@ const FRAME_PRESETS = {
     metalness: 1.0,
     roughness: 0.3,
   },
-  champagne: {
-    baseColor: new THREE.Color(0xf0dfb0),
-    f0: new THREE.Color(0.95, 0.86, 0.66), // pale gold alloy, lighter than pure gold
+  gunmetal: {
+    baseColor: new THREE.Color(0x20242a),
+    f0: new THREE.Color(0.09, 0.1, 0.13),
     metalness: 1.0,
-    roughness: 0.18, // was almost identical-highlight to polishedGold at swatch size
+    roughness: 0.3,
   },
-  copper: {
-    baseColor: new THREE.Color(0xc07350),
-    f0: new THREE.Color(0.955, 0.638, 0.538),
-    metalness: 1.0,
-    roughness: 0.15,
-  },
-  graphite: {
-    baseColor: new THREE.Color(0x2e3236),
-    f0: new THREE.Color(0.26, 0.27, 0.3), // dark steel/graphite-coated
-    metalness: 1.0,
-    roughness: 0.35,
+  matteBlack: {
+    baseColor: new THREE.Color(0x1a1a1a),
+    f0: new THREE.Color(0.15, 0.15, 0.16), // low-metalness coated finish, not a pure metal
+    metalness: 0.3,
+    roughness: 0.42,
   },
 };
 

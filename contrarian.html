@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thorne & Vale — Selected Takes</title>
+    <meta
+      name="description"
+      content="Dossier N°09 — The Contrarian. Selected Takes: an archive box of contact sheets, storyboards, and production notes, not a screening."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..500;1,6..96,400..500&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&family=Caveat:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles/base.css" />
+    <link rel="stylesheet" href="/src/styles/view-transitions.css" />
+    <link rel="stylesheet" href="/src/styles/contrarian.css" />
+  </head>
+  <body>
+    <div class="breadcrumb reveal" data-exit="text">
+      <a href="/index.html" data-nav-direction="back">Home</a>
+      <span class="sep">/</span>
+      <span class="current">The Contrarian</span>
+    </div>
+
+    <main class="co-page">
+      <section class="co-hero" data-exit="text">
+        <div class="co-eyebrow eyebrow reveal">Dossier N°09 — Cinema Editorial</div>
+        <h1 class="co-title reveal">Selected Takes</h1>
+        <p class="co-tagline reveal">Notes from an archive box, not a screening.</p>
+      </section>
+
+      <section class="co-study">
+        <div class="co-board reveal" id="co-board">
+          <div class="co-board-label">ARCHIVE BOX — REEL 04 · SELECTED TAKES · NOT FOR PRESS</div>
+
+          <div class="co-slot co-slot--contact" id="co-slot-contact"></div>
+          <div class="co-slot co-slot--filmstrip" id="co-slot-filmstrip"></div>
+          <div class="co-slot co-slot--storyboard-a" id="co-slot-storyboard-0"></div>
+          <div class="co-slot co-slot--storyboard-b" id="co-slot-storyboard-1"></div>
+          <div class="co-slot co-slot--script" id="co-slot-script"></div>
+          <div class="co-slot co-slot--shotlist" id="co-slot-shotlist"></div>
+          <div class="co-slot co-slot--lighting" id="co-slot-lighting"></div>
+          <div class="co-slot co-slot--still-a" id="co-slot-still-0"></div>
+          <div class="co-slot co-slot--still-b" id="co-slot-still-1"></div>
+          <div class="co-slot co-slot--notes" id="co-slot-notes"></div>
+
+          <div class="co-deco co-deco--tape-1" aria-hidden="true"></div>
+          <div class="co-deco co-deco--tape-2" aria-hidden="true"></div>
+          <div class="co-deco co-deco--tape-3" aria-hidden="true"></div>
+          <div class="co-deco co-deco--stamp" aria-hidden="true">SELECTS</div>
+          <div class="co-deco co-deco--registration" aria-hidden="true">⊕</div>
+
+          <p class="co-hint" id="co-hint">Explore freely — click, hover, drag the strip.</p>
+        </div>
+      </section>
+    </main>
+
+    <button type="button" class="co-backdrop" id="co-backdrop" aria-label="Close"></button>
+
+    <script type="module" src="/src/contrarian.js"></script>
+  </body>
+</html>

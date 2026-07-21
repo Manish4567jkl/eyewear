@@ -1,5 +1,5 @@
-/* Maison Vellora — homepage "magazine" experience. Ported 1:1 from the finalized
-   Claude Design handoff (Maison Vellora Homepage.dc.html) — a 6-plate, wheel/arrow
+/* Thorne & Vale — homepage "magazine" experience. Ported 1:1 from the finalized
+   Claude Design handoff (Thorne & Vale Homepage.dc.html) — a 6-plate, wheel/arrow
    paginated single-viewport composition, not a normal scrolling page. Self-contained
    on purpose: this design language (Bodoni Moda / Space Mono / Archivo, the oklch
    palette below) is a deliberate departure from the rest of the site's Atelier Noir
@@ -119,6 +119,10 @@ a, button {
 
 /* ---------- Custom cursor ---------- */
 
+/* mix-blend-mode: difference (same technique as .mv-topbar/.mv-nav/.mv-counter) makes
+   the cursor auto-invert against whatever plate is beneath it — white-on-a-white ring
+   difference-blends to black, black-on-dark-maroon difference-blends to near-white, so
+   it stays visible on every plate without hand-tuning a color per background. */
 .mv-cursor {
   position: fixed;
   top: 0;
@@ -128,6 +132,7 @@ a, button {
   pointer-events: none;
   z-index: 999;
   will-change: transform;
+  mix-blend-mode: difference;
 }
 
 @media (max-width: 720px), (hover: none) and (pointer: coarse) {
@@ -139,7 +144,7 @@ a, button {
 .mv-cursor-ring {
   position: absolute;
   inset: 0;
-  border: 1.5px solid var(--mv-accent);
+  border: 1.5px solid var(--mv-paper);
   border-radius: 0%;
   transition: border-radius 0.3s ease, transform 0.3s ease;
 }
@@ -152,7 +157,7 @@ a, button {
 .mv-cursor-h,
 .mv-cursor-v {
   position: absolute;
-  background: var(--mv-accent);
+  background: var(--mv-paper);
 }
 
 .mv-cursor-h {
@@ -179,7 +184,7 @@ a, button {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--mv-accent);
+  color: var(--mv-paper);
   white-space: nowrap;
   opacity: 0;
   transition: opacity 0.25s ease;
@@ -213,7 +218,7 @@ a, button {
 }
 
 .mv-brand-name {
-  font-family: "Bodoni Moda", serif;
+  font-family: "Italiana", serif;
   font-size: 17px;
 }
 
@@ -252,7 +257,9 @@ a, button {
 .mv-page {
   position: absolute;
   inset: 0;
-  transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1);
+  /* Turn motion is now GSAP-driven per-plate (see positionPlates() in home.js) so the
+     leaving and arriving plates can run different eases/durations — a single CSS
+     transition here would double-animate on top of GSAP's per-frame writes. */
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -382,11 +389,13 @@ a, button {
   pointer-events: none;
 }
 
+/* Dead-center collides with the live 3D frame's lenses — sit a bit lower instead. */
 .mv-atelier-plate .mv-plate-caption {
+  align-items: flex-end;
+  padding: 16px 16px 22%;
   font-size: 10px;
   letter-spacing: normal;
   line-height: normal;
-  padding: 16px;
 }
 
 /* Dead-center collides with the live 3D frame's bridge — sit a bit lower instead. */
@@ -704,34 +713,53 @@ a, button {
 .mv-collection-head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 24px;
   margin-bottom: 28px;
   flex-wrap: wrap;
+}
+
+.mv-collection-title {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(32px, 4vw, 54px);
+  line-height: 0.98;
+  margin: 10px 0 0;
 }
 
 .mv-collection-quote {
   font-family: "Bodoni Moda", serif;
   font-style: italic;
   font-size: 20px;
-  margin: 0;
+  line-height: 1.35;
+  text-align: right;
+  margin: 4px 0 0;
 }
 
+/* One large plate (the first) spans both rows on the left; the remaining two stack
+   in the right column — an asymmetric grid rather than three equal columns. */
 .mv-collection-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1.15fr 1fr;
+  grid-template-rows: 1fr 1fr;
   gap: 24px;
   flex: 1;
+  min-height: 0;
 }
 
 .mv-plate {
-  display: block;
+  display: flex;
   color: inherit;
+}
+
+.mv-plate:first-child {
+  grid-row: 1 / 3;
 }
 
 .mv-plate-media {
   position: relative;
-  aspect-ratio: 4 / 3;
+  width: 100%;
+  height: 100%;
   border: 1px solid oklch(0.18 0.01 40 / 0.25);
   display: flex;
   align-items: center;
@@ -748,31 +776,16 @@ a, button {
   transition-duration: 150ms;
 }
 
-.mv-plate-veil {
+.mv-plate-counter {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 14px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 55%);
-  opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 250ms ease, transform 250ms ease;
-}
-
-.mv-plate:hover .mv-plate-veil {
-  opacity: 1;
-  transform: translateY(0);
-  transition-duration: 150ms;
-}
-
-.mv-plate-cta {
+  top: 14px;
+  left: 14px;
+  padding: 4px 8px;
+  background: oklch(0.97 0.01 85 / 0.85);
+  color: oklch(0.18 0.01 40);
   font-family: "Space Mono", monospace;
   font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: oklch(0.97 0.01 85);
+  letter-spacing: 0.08em;
 }
 
 .mv-plate-fig {
@@ -781,23 +794,34 @@ a, button {
   letter-spacing: 0.06em;
 }
 
+/* Name/material bar is always visible (not a hover reveal) — a permanent caption
+   over the bottom of the plate, matching the reference exactly. */
 .mv-plate-meta {
-  margin-top: 8px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 8px;
+  padding: 14px 16px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 65%);
 }
 
 .mv-plate-name {
   font-family: "Bodoni Moda", serif;
   font-style: italic;
-  font-size: 13px;
+  font-size: 15px;
+  color: oklch(0.97 0.01 85);
 }
 
 .mv-plate-price {
   font-family: "Space Mono", monospace;
   font-size: 9px;
-  opacity: 0.55;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: oklch(0.97 0.01 85 / 0.75);
 }
 
 .mv-collection-footline {
@@ -1161,10 +1185,17 @@ a, button {
   );
   box-shadow: 0 30px 60px -25px rgba(0, 0, 0, 0.5);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   padding: 14px;
   text-align: center;
+  text-decoration: none;
+  color: inherit;
+  cursor: default;
+  pointer-events: none;
+  transition: transform 0.35s var(--ease-out-soft), box-shadow 0.35s var(--ease-out-soft);
 }
 
 .mv-wearer-image-caption {
@@ -1172,6 +1203,37 @@ a, button {
   font-size: 9px;
   letter-spacing: 0.1em;
   color: oklch(0.97 0.01 85 / 0.75);
+}
+
+.mv-wearer-image-hint {
+  font-family: "Space Mono", monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mv-atelier-accent);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.25s var(--ease-out-soft), transform 0.25s var(--ease-out-soft);
+}
+
+/* Only the Flâneur dossier's placeholder leads anywhere (see initWearer() in
+   home.js) — every other dossier's card stays inert, unrotating, unclickable
+   chrome, exactly as before this became a link element. */
+.mv-wearer-image.is-explorable {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.mv-wearer-image.is-explorable:hover,
+.mv-wearer-image.is-explorable:focus-visible {
+  transform: rotate(0deg) scale(1.03);
+  box-shadow: 0 34px 70px -25px rgba(0, 0, 0, 0.6);
+}
+
+.mv-wearer-image.is-explorable:hover .mv-wearer-image-hint,
+.mv-wearer-image.is-explorable:focus-visible .mv-wearer-image-hint {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .mv-wearer-no {
@@ -1343,7 +1405,7 @@ a, button {
 }
 
 .mv-colophon-wordmark {
-  font-family: "Bodoni Moda", serif;
+  font-family: "Italiana", serif;
   font-size: clamp(30px, 3.6vw, 46px);
   line-height: 1;
   margin: 0;
@@ -1492,8 +1554,13 @@ a, button {
     display: none;
   }
 
-  .mv-cover {
-    padding-top: 10vw;
+  /* The topbar is an absolute overlay, so a stacked plate's first line lands under the
+     wordmark unless it reserves room. Measured off the bar (~66px) rather than a plain
+     vw, which only clears it on phones and balloons past 170px by tablet. */
+  .mv-cover,
+  .mv-configurator,
+  .mv-collection {
+    padding-top: max(10vw, 88px);
   }
 
   .mv-cover-plate,
@@ -1508,18 +1575,48 @@ a, button {
     aspect-ratio: 16 / 10;
   }
 
-  .mv-configurator-body {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
-    scrollbar-width: none;
+  /* Stacked, the rail is taller than the row the desktop layout caps it to, so its own
+     overflow-y silently swallowed the modes, angles and CTA behind a hidden scrollbar.
+     Let the plate be the only scroller and give the viewer an intrinsic height, since
+     flex:1 has nothing to divide once the column stops filling the viewport. */
+  .mv-configurator {
+    height: auto;
+    min-height: 100%;
+    padding-bottom: calc(3vw + 56px);
   }
 
-  .mv-configurator-body::-webkit-scrollbar {
-    display: none;
+  .mv-configurator-body {
+    grid-template-columns: 1fr;
+    flex: none;
+    overflow-y: visible;
+  }
+
+  .mv-configurator-rail {
+    overflow-y: visible;
+  }
+
+  .mv-viewer {
+    flex: none;
+    aspect-ratio: 4 / 3;
+  }
+
+  /* Collection is the one plate whose stacked content outgrows the viewport, so it has
+     to clear the prev/next overlay that the shorter plates never reach. */
+  .mv-collection {
+    padding-bottom: calc(6vw + 56px);
   }
 
   .mv-collection-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .mv-plate:first-child {
+    grid-row: auto;
+  }
+
+  .mv-plate-media {
+    aspect-ratio: 4 / 3;
   }
 
   .mv-colophon-top {
@@ -1529,6 +1626,10 @@ a, button {
 
   .mv-topbar {
     padding: 20px 6%;
+  }
+
+  .mv-collection-quote {
+    text-align: left;
   }
 
   /* Materials, The Wearer, and Manifesto are absolutely positioned per the
@@ -1669,5 +1770,14 @@ a, button {
 @media (max-width: 560px) {
   .mv-collection-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* The wordmark plus nine dots overrun the bar on a phone, pushing the later dots off
+   the right edge where they can't be tapped. Prev/next and the counter already carry
+   position on these widths. */
+@media (max-width: 720px) {
+  .mv-dots {
+    display: none;
   }
 }

@@ -11,6 +11,10 @@ const TEXT_PRESETS = {
   white: { color: new THREE.Color(0xf5f5f5), metalness: 0.1, roughness: 0.4 },
   gold: { color: new THREE.Color(0xffd27a), metalness: 1.0, roughness: 0.15 },
   silver: { color: new THREE.Color(0xd6d6d6), metalness: 1.0, roughness: 0.25 },
+  roseGold: { color: new THREE.Color(0xe0a08c), metalness: 1.0, roughness: 0.2 },
+  // Tone-on-tone engraving rather than an applied metal marking — reads as debossed,
+  // which is a genuinely different treatment from the five metals above it.
+  cream: { color: new THREE.Color(0xe6dcc6), metalness: 0.1, roughness: 0.55 },
 };
 
 export const TEXT_PRESET_NAMES = Object.keys(TEXT_PRESETS);

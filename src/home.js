@@ -2,10 +2,12 @@ import { gsap, SplitText, crossfadeText, EASE, DUR } from "./motion.js";
 import { PRODUCTS, getCollection, formatPrice } from "./data/products.js";
 import { swatchGradient } from "./swatchGradient.js";
 import { mountProductViewer } from "./homeViewer.js";
+import { navigateWithLoadingTransition } from "./loadingTransition.js";
+import { initPageTransitionLinks, consumeStoredDirection } from "./pageTransition.js";
 
 // ==========================================================================
 // This homepage is a faithful build of the finalized Claude Design handoff
-// (Maison Vellora Homepage.dc.html): a single-viewport, wheel/arrow-paginated
+// (Thorne & Vale Homepage.dc.html): a single-viewport, wheel/arrow-paginated
 // "magazine" of 9 plates, not a normal scrolling page — so it intentionally
 // does not use Lenis (there is nothing to smooth-scroll; the root element is
 // overflow:hidden and pages are turned via transform, not document scroll).
@@ -29,14 +31,14 @@ const ROOMS = [
     name: "Studio",
     desc: "Cool neutrals, shot on seamless.",
     colors: [
-      { name: "Graphite", hex: "#2e3236", preset: "graphite" },
+      { name: "Graphite", hex: "#2e3236", preset: "gunmetal" },
       { name: "Bone", hex: "#e7e3db", preset: "titanium" },
       { name: "Steel", hex: "#8b9299", preset: "brushedSilver" },
     ],
     tints: [
       { name: "Clear", hex: "#dfe9f0", preset: "clear" },
       { name: "Smoke", hex: "#4c545c", preset: "gray" },
-      { name: "Ash", hex: "#9aa4ac", preset: "blue" },
+      { name: "Ash", hex: "#9aa4ac", preset: "gradientSmoke" },
     ],
   },
   {
@@ -61,7 +63,7 @@ const ROOMS = [
     colors: [
       { name: "Ink", hex: "#1c1e21", preset: "matteBlack" },
       { name: "Chalk", hex: "#e3e1da", preset: "titanium" },
-      { name: "Moss", hex: "#5c6b4f", preset: "graphite" },
+      { name: "Moss", hex: "#5c6b4f", preset: "gunmetal" },
     ],
     tints: [
       { name: "Clear", hex: "#dfe9f0", preset: "clear" },
@@ -96,6 +98,9 @@ const WEARER_DATA = [
     rec: "THE CASSIAN · GRAY TINT",
     figCaption: "DESK LAMP, 2AM",
     no: "01",
+    // See the `studyHref` note on The Flâneur below — same mechanism.
+    studyHref: "/night-editor.html",
+    studyLabel: "Reading Study",
   },
   {
     numeral: "II",
@@ -106,6 +111,11 @@ const WEARER_DATA = [
     rec: "THE OSTRANDE · TITANIUM",
     figCaption: "ON FOOT, RAIN",
     no: "04",
+    // Dossiers with a real destination beyond this tab carry a studyHref — see
+    // initWearer(), which is what makes the placeholder image clickable only for
+    // entries that have one.
+    studyHref: "/flaneur.html",
+    studyLabel: "Movement Study",
   },
   {
     numeral: "III",
@@ -116,6 +126,8 @@ const WEARER_DATA = [
     rec: "THE CORBIN · GREEN TINT",
     figCaption: "SHARP EDGE, GOLD",
     no: "09",
+    studyHref: "/contrarian.html",
+    studyLabel: "Selected Takes",
   },
 ];
 
@@ -144,7 +156,7 @@ function initIntro() {
   let n = 0;
   const timer = setInterval(() => {
     n += 1;
-    plateEl.textContent = `MAISON VELLORA — PLATE ${String(Math.min(n, 7)).padStart(2, "0")}`;
+    plateEl.textContent = `THORNE & VALE — PLATE ${String(Math.min(n, 7)).padStart(2, "0")}`;
     if (n >= 7) clearInterval(timer);
   }, 180);
 
@@ -215,27 +227,87 @@ function initPager({ onChange } = {}) {
   const dots = $$(".mv-dot", dotsEl);
 
   let index = 0;
+  let previousIndex = 0;
 
-  function render() {
+  // The counter/dots/crosshair are chrome that lives outside .mv-pages entirely —
+  // already persistent across a page turn with zero extra work. What was missing was
+  // giving the turn itself real, directional motion: the leaving plate eases OUT on the
+  // page's exit curve, the arriving plate eases IN on its entrance curve, rather than
+  // both ends of the turn sharing one symmetric CSS transition.
+  function positionPlates(animate) {
     pages.forEach((page, i) => {
       const diff = i - index;
-      page.style.transform = `translateX(${diff * 100}%)`;
       page.style.zIndex = String(10 - Math.abs(diff));
       page.style.boxShadow =
         diff === 0 ? "none" : diff > 0 ? "inset 40px 0 40px -40px rgba(0,0,0,0.3)" : "inset -40px 0 40px -40px rgba(0,0,0,0.3)";
+
+      // A page whose old AND new position are both outside the ±1 window that's ever
+      // actually on screen (xPercent between -100 and 100) never crosses the viewport
+      // during this turn — snapping it instantly instead of tweening it means a
+      // single-step wheel/arrow turn only animates the ~2-3 plates the visitor can
+      // actually see, not all nine full-viewport plates (most of them holding a live
+      // Three.js canvas) every single time. A multi-page jump from clicking a dot
+      // further down the list still sweeps visibly through the plates in between, so
+      // those stay tweened.
+      const prevDiff = i - previousIndex;
+      const staysOffscreen = Math.abs(diff) >= 2 && Math.abs(prevDiff) >= 2;
+
+      if (!animate || staysOffscreen) {
+        gsap.set(page, { xPercent: diff * 100 });
+        return;
+      }
+      const isLeaving = i === previousIndex;
+      gsap.to(page, {
+        xPercent: diff * 100,
+        duration: isLeaving ? 0.85 : 1.05,
+        ease: isLeaving ? EASE.exit : EASE.entrance,
+        overwrite: "auto",
+      });
     });
+  }
+
+  // A quick scale-pulse on the crosshair ring at the instant of a page turn — the
+  // "leading" cue for this same-document nav, standing in for the "clicked element
+  // pops forward" treatment used on real cross-document link clicks.
+  function pulseCursor() {
+    const ring = $("#mv-cursor-ring");
+    if (!ring) return;
+    gsap.fromTo(ring, { scale: 1 }, { scale: 1.35, duration: 0.15, ease: EASE.hoverIn, yoyo: true, repeat: 1 });
+  }
+
+  function render(animate = true) {
+    positionPlates(animate);
     dots.forEach((dot, i) => dot.classList.toggle("is-active", i === index));
     counterEl.textContent = `${String(index + 1).padStart(2, "0")} / ${String(PAGE_KEYS.length).padStart(2, "0")}`;
     prevBtn.disabled = index === 0;
     nextBtn.disabled = index === PAGE_KEYS.length - 1;
-    onChange?.(PAGE_KEYS[index], index);
+    if (animate) {
+      // Let the wipe read as leading the motion — content reveal follows a beat behind
+      // rather than racing it flush.
+      gsap.delayedCall(0.15, () => onChange?.(PAGE_KEYS[index], index));
+    } else {
+      onChange?.(PAGE_KEYS[index], index);
+    }
+    previousIndex = index;
   }
+
+  // Guards every entry point (dots, prev/next, arrow keys, data-jump links) against
+  // firing mid-turn — without it, a rapid double-click/keypress retriggers goTo()
+  // before the current tween finishes, and GSAP's overwrite:"auto" cuts the plate off
+  // mid-flight to chase the new target. That interruption is what read as the turn
+  // "not working" — it wasn't ignoring the input, it was restarting on top of itself.
+  let isTransitioning = false;
 
   function goTo(next) {
     const clamped = Math.max(0, Math.min(PAGE_KEYS.length - 1, next));
-    if (clamped === index) return;
+    if (clamped === index || isTransitioning) return;
     index = clamped;
-    render();
+    isTransitioning = true;
+    pulseCursor();
+    render(true);
+    setTimeout(() => {
+      isTransitioning = false;
+    }, 1100); // matches positionPlates' longest tween (1.05s) plus a small margin
   }
 
   dots.forEach((dot, i) => dot.addEventListener("click", () => goTo(i)));
@@ -264,14 +336,17 @@ function initPager({ onChange } = {}) {
       if (wheelCooldown || Math.abs(e.deltaY) < 12) return;
       wheelCooldown = true;
       goTo(index + (e.deltaY > 0 ? 1 : -1));
+      // Held at least as long as the turn's own longest tween (1.05s — see
+      // positionPlates) so a fast wheel spin can't fire the next turn mid-animation
+      // and cut the current one off; that overlap was part of what read as choppy.
       setTimeout(() => {
         wheelCooldown = false;
-      }, 900);
+      }, 1150);
     },
     { passive: false },
   );
 
-  render();
+  render(false);
   return { goTo, get index() { return index; } };
 }
 
@@ -309,17 +384,18 @@ function renderContents() {
 // ==========================================================================
 function renderCollection() {
   const grid = $("#mv-collection-grid");
+  const total = String(PRODUCTS.length).padStart(2, "0");
   grid.innerHTML = PRODUCTS.map((product, i) => {
     const collection = getCollection(product.collection);
     return `
-      <a class="mv-plate" href="/products/${product.slug}/" data-magnify="true">
+      <a class="mv-plate" href="/products/${product.slug}/" data-magnify="true" data-lead>
         <div class="mv-plate-media" style="background:${swatchGradient(product)}; color:oklch(0.97 0.01 85 / 0.85); view-transition-name: product-${product.slug}">
+          <span class="mv-plate-counter">${String(i + 1).padStart(2, "0")} / ${total}</span>
           <span class="mv-plate-fig">FIG. 0${i + 1} — ${product.name.toUpperCase()}</span>
-          <span class="mv-plate-veil"><span class="mv-plate-cta">View ${product.name} →</span></span>
-        </div>
-        <div class="mv-plate-meta">
-          <span class="mv-plate-name" style="view-transition-name: product-name-${product.slug}">${product.name}</span>
-          <span class="mv-plate-price">${collection.eyebrow.replace("The ", "").replace(" Collection", "").toUpperCase()} · ${formatPrice(product.price)}</span>
+          <div class="mv-plate-meta">
+            <span class="mv-plate-name" style="view-transition-name: product-name-${product.slug}">${product.name}</span>
+            <span class="mv-plate-price">${collection.eyebrow.replace("The ", "").replace(" Collection", "").toUpperCase()} · ${formatPrice(product.price)}</span>
+          </div>
         </div>
       </a>`;
   }).join("");
@@ -351,7 +427,9 @@ function initWearer() {
   const quoteEl = $("#mv-wearer-quote");
   const bioEl = $("#mv-wearer-bio");
   const recEl = $("#mv-wearer-rec");
+  const imageEl = $("#mv-wearer-image");
   const captionEl = $("#mv-wearer-image-caption");
+  const hintEl = $("#mv-wearer-image-hint");
   const noEl = $("#mv-wearer-no");
 
   let active = 0;
@@ -373,6 +451,17 @@ function initWearer() {
     recEl.textContent = `REC. — ${dossier.rec}`;
     captionEl.textContent = `FIG. 07${dossier.figLabel} — ${dossier.figCaption}`;
     noEl.textContent = `NO. ${dossier.no} / EDITION SS26`;
+
+    // Only dossiers with a studyHref have a real destination behind their placeholder
+    // image (Night Editor → its reading study, Flâneur → its movement-study map) —
+    // every other dossier's card stays inert chrome.
+    const explorable = Boolean(dossier.studyHref);
+    imageEl.classList.toggle("is-explorable", explorable);
+    imageEl.tabIndex = explorable ? 0 : -1;
+    if (explorable) {
+      imageEl.href = dossier.studyHref;
+      hintEl.textContent = `${dossier.studyLabel} →`;
+    }
   }
 
   tabsEl.addEventListener("click", (e) => {
@@ -594,9 +683,14 @@ function initConfigurator(viewer) {
   modesEl.addEventListener("click", (e) => {
     const btn = e.target.closest(".mv-mode");
     if (!btn) return;
-    // Mannequin/Lens Detail are real links now (see `modes` above) — let the browser
-    // navigate rather than running the in-place preview switch below.
-    if (btn.tagName === "A") return;
+    // Mannequin/Lens Detail are real links now (see `modes` above) — intercept just
+    // long enough to play the loading transition before handing off to the real
+    // navigation, rather than running the in-place preview switch below.
+    if (btn.tagName === "A") {
+      e.preventDefault();
+      navigateWithLoadingTransition(btn.getAttribute("href"), { palette: "light", plateNumber: "03", leadEl: btn });
+      return;
+    }
     const nextMode = btn.dataset.mode;
     const wasDetail = state.mode === "table";
     const isDetail = nextMode === "table";
@@ -634,7 +728,23 @@ function initConfigurator(viewer) {
     const start = viewerPointerDown;
     viewerPointerDown = null;
     if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) return;
-    window.location.href = `/products/${CONFIGURATOR_MODEL_PRODUCT.slug}/`;
+    navigateWithLoadingTransition(`/products/${CONFIGURATOR_MODEL_PRODUCT.slug}/`, {
+      palette: "dark",
+      plateNumber: "03",
+      leadEl: viewerEl,
+    });
+  });
+
+  // "Enter the full configurator →" hands off to a different page's own 3D scene —
+  // same treatment as the crosshair CTA above and the mannequin/lens-detail modes.
+  const enterConfiguratorEl = $(".mv-wall-label-cta");
+  enterConfiguratorEl?.addEventListener("click", (e) => {
+    e.preventDefault();
+    navigateWithLoadingTransition(enterConfiguratorEl.getAttribute("href"), {
+      palette: "light",
+      plateNumber: "03",
+      leadEl: enterConfiguratorEl,
+    });
   });
 
   applyToViewer();
@@ -668,18 +778,26 @@ let coverTitleSplit = null;
 
 function animatePlateEntrance(pageKey) {
   if (pageKey === "cover") {
+    // Only the very first play of this plate (landing here from a real cross-document
+    // navigation — brand logo, breadcrumb, Close Plate) should read the one-shot
+    // direction flag; later in-session visits back to this plate via the pager just
+    // get the default forward entrance, since consumeStoredDirection() clears the flag
+    // on first read.
+    const dir = consumeStoredDirection();
+    const xOff = dir === "back" ? -14 : 14;
+
     const titleEl = $(".mv-cover-title");
     if (!coverTitleSplit) coverTitleSplit = SplitText.create(titleEl, { type: "chars" });
     gsap.set(titleEl, { opacity: 1 });
     gsap.set(coverTitleSplit.chars, { yPercent: 130, opacity: 0 });
     gsap.set(".mv-cover-plate", { clipPath: "inset(0 0 100% 0)" });
-    gsap.set(".mv-cover-issue, .mv-cover-sub", { opacity: 0, y: 12 });
+    gsap.set(".mv-cover-issue, .mv-cover-sub", { opacity: 0, y: 12, x: xOff });
 
     gsap
       .timeline()
-      .to(".mv-cover-issue", { opacity: 0.7, y: 0, duration: DUR.reveal, ease: EASE.entrance })
+      .to(".mv-cover-issue", { opacity: 0.7, y: 0, x: 0, duration: DUR.reveal, ease: EASE.entrance })
       .to(coverTitleSplit.chars, { yPercent: 0, opacity: 1, duration: 0.6, ease: EASE.overshoot, stagger: 0.018 }, "-=0.25")
-      .to(".mv-cover-sub", { opacity: 0.85, y: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.35")
+      .to(".mv-cover-sub", { opacity: 0.85, y: 0, x: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.35")
       .to(".mv-cover-plate", { clipPath: "inset(0 0 0% 0)", duration: 0.9, ease: EASE.entrance }, "-=0.55");
   } else if (pageKey === "configurator") {
     gsap.from([".mv-room-tabs", ".mv-room-desc", ".mv-swatch-cols", ".mv-mode-list", ".mv-angles", ".mv-wall-label"], {
@@ -728,6 +846,7 @@ function animatePlateEntrance(pageKey) {
 // ==========================================================================
 initIntro();
 initCursor();
+initPageTransitionLinks();
 renderContents();
 renderCollection();
 renderMaterials();
