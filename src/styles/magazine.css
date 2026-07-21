@@ -268,10 +268,21 @@ a, button {
   display: none;
 }
 
-.mv-page--cover,
+/* The cover moved to the same warm cream as Plate 04 (see .mv-page--collection) — the
+   finalized reference pairs the two as one light editorial "front matter" pass, while
+   Atelier keeps the original dark, moody treatment on its own. */
+.mv-page--cover {
+  background: var(--mv-collection-bg);
+  color: var(--mv-ink);
+}
+
+/* Cream base — the dark maroon now lives in .mv-atelier-wedge, an absolutely-
+   positioned clipped shape layered on top rather than the whole page's own bg (see
+   .mv-atelier in the Atelier section below), so the diagonal cut can cross both
+   content columns instead of the page being uniformly dark. */
 .mv-page--atelier {
-  background: var(--mv-cover-bg);
-  color: var(--mv-paper);
+  background: var(--mv-collection-bg);
+  color: var(--mv-ink);
 }
 
 .mv-page--contents,
@@ -311,6 +322,7 @@ a, button {
 /* ---------- Cover ---------- */
 
 .mv-cover {
+  position: relative;
   width: 100%;
   height: 100%;
   padding: 8vw 6%;
@@ -320,7 +332,50 @@ a, button {
   align-items: end;
 }
 
+/* A huge outlined "issue number" watermark sitting behind the headline — pure
+   flourish, echoing the same technical-drawing crosshair used on Plates 04/07. */
+.mv-cover-ghost {
+  position: absolute;
+  top: 4%;
+  left: 32%;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mv-cover-ghost-num {
+  font-family: "Bodoni Moda", serif;
+  font-size: clamp(160px, 22vw, 340px);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px oklch(0.18 0.01 40 / 0.12);
+}
+
+.mv-cover-ghost-mark {
+  position: absolute;
+  left: 21%;
+  top: 40%;
+  width: 34px;
+  height: 34px;
+  color: oklch(0.18 0.01 40 / 0.3);
+}
+
+.mv-cover-ghost-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mv-cover-copy {
+  position: relative;
+  z-index: 1;
+}
+
 .mv-cover-issue {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: "Space Mono", monospace;
   font-size: 11px;
   letter-spacing: 0.2em;
@@ -328,11 +383,51 @@ a, button {
   margin-bottom: 24px;
 }
 
+.mv-cover-issue::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mv-accent);
+  flex-shrink: 0;
+}
+
 .mv-cover-title {
+  position: relative;
   font-family: "Bodoni Moda", serif;
   font-size: clamp(70px, 10.5vw, 190px);
   line-height: 0.92;
   margin: 0;
+}
+
+/* A small scattered cluster of accent dots trailing off the headline — same red as
+   the issue bullet above, just decorative punctuation on the display type. Zero-height
+   so it sits exactly at the title's own bottom edge regardless of how tall the title's
+   two lines render at any given viewport, with the dots pulled up into that corner via
+   negative `top` rather than a percentage of some taller ancestor's box. */
+.mv-cover-title-dots {
+  position: relative;
+  height: 0;
+}
+
+.mv-cover-title-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--mv-accent);
+}
+
+.mv-cover-title-dot:nth-of-type(1) {
+  width: 10px;
+  height: 10px;
+  right: 18%;
+  top: -34px;
+}
+
+.mv-cover-title-dot:nth-of-type(2) {
+  width: 6px;
+  height: 6px;
+  right: 10%;
+  top: -20px;
 }
 
 .mv-cover-sub {
@@ -345,8 +440,14 @@ a, button {
   opacity: 0.85;
 }
 
+/* Now a real link (→ On Mannequin, pre-selected to the Cassian it's showing — see
+   the ?slug= handling in mannequinScene.js), so it needs its own block box (an <a>
+   is inline by default, which the aspect-ratio/height sizing below assumes away) and
+   a hover affordance to actually read as clickable. */
 .mv-cover-plate {
   position: relative;
+  z-index: 1;
+  display: block;
   /* Wider than the mockup's 4/5 — at 4/5 the box's height (capped to the row, see
      below) computed a width well short of the column, leaving visible gaps on both
      sides. 1/1 uses that same height but fills the column much more fully. */
@@ -360,8 +461,14 @@ a, button {
   width: auto;
   max-width: 100%;
   justify-self: end;
-  border: 1px solid oklch(0.97 0.01 85 / 0.25);
+  border: 1px solid oklch(0.18 0.01 40 / 0.2);
   overflow: hidden;
+  transition: transform 0.35s var(--ease-out-soft), border-color 0.35s var(--ease-out-soft);
+}
+
+.mv-cover-plate:hover {
+  transform: scale(1.015);
+  border-color: var(--mv-accent);
 }
 
 .mv-cover-plate canvas {
@@ -387,15 +494,6 @@ a, button {
   text-align: center;
   opacity: 0.7;
   pointer-events: none;
-}
-
-/* Dead-center collides with the live 3D frame's lenses — sit a bit lower instead. */
-.mv-atelier-plate .mv-plate-caption {
-  align-items: flex-end;
-  padding: 16px 16px 22%;
-  font-size: 10px;
-  letter-spacing: normal;
-  line-height: normal;
 }
 
 /* Dead-center collides with the live 3D frame's bridge — sit a bit lower instead. */
@@ -736,92 +834,131 @@ a, button {
   margin: 4px 0 0;
 }
 
-/* One large plate (the first) spans both rows on the left; the remaining two stack
-   in the right column — an asymmetric grid rather than three equal columns. */
+/* Three products as minimalist line-art diagrams strung along one shared axis line —
+   a technical-drawing/blueprint motif ("considered", not a retail grid) rather than
+   the photo-card treatment this replaced. Each item reserves an equal fixed-height
+   slot above and below its diagram (see .mv-line-item's grid-template-rows) so every
+   diagram's vertical centre lands on the same line regardless of which side that
+   item's caption/mark sit on — see the --flip modifier below. */
 .mv-collection-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 24px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(16px, 3vw, 48px);
   flex: 1;
   min-height: 0;
 }
 
-.mv-plate {
-  display: flex;
-  color: inherit;
-}
-
-.mv-plate:first-child {
-  grid-row: 1 / 3;
-}
-
-.mv-plate-media {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border: 1px solid oklch(0.18 0.01 40 / 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-  text-align: center;
-  overflow: hidden;
-  transform: scale(1);
-  transition: transform var(--dur-release, 250ms) ease;
-}
-
-.mv-plate:hover .mv-plate-media {
-  transform: scale(1.03);
-  transition-duration: 150ms;
-}
-
-.mv-plate-counter {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  padding: 4px 8px;
-  background: oklch(0.97 0.01 85 / 0.85);
-  color: oklch(0.18 0.01 40);
-  font-family: "Space Mono", monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-}
-
-.mv-plate-fig {
-  font-family: "Space Mono", monospace;
-  font-size: 9px;
-  letter-spacing: 0.06em;
-}
-
-/* Name/material bar is always visible (not a hover reveal) — a permanent caption
-   over the bottom of the plate, matching the reference exactly. */
-.mv-plate-meta {
+.mv-collection-grid::before {
+  content: "";
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  padding: 14px 16px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 65%);
+  top: 50%;
+  height: 1px;
+  background: oklch(0.18 0.01 40 / 0.22);
+  z-index: 0;
 }
 
-.mv-plate-name {
-  font-family: "Bodoni Moda", serif;
-  font-style: italic;
-  font-size: 15px;
-  color: oklch(0.97 0.01 85);
+.mv-line-item {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 60px 96px 60px;
+  align-items: center;
+  justify-items: center;
+  row-gap: 10px;
+  color: inherit;
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
 }
 
-.mv-plate-price {
+.mv-line-item .mv-line-mark {
+  grid-row: 1;
+}
+
+.mv-line-item .mv-line-svg {
+  grid-row: 2;
+}
+
+.mv-line-item .mv-line-caption {
+  grid-row: 3;
+}
+
+/* The middle item's mark/caption swap sides, so the three don't all read identically
+   — the diagram itself stays in row 2 for every item, so all three still land on the
+   shared axis line above regardless. */
+.mv-line-item--flip .mv-line-mark {
+  grid-row: 3;
+}
+
+.mv-line-item--flip .mv-line-caption {
+  grid-row: 1;
+}
+
+.mv-line-item--flip .mv-line-mark {
+  transform: scaleY(-1);
+}
+
+.mv-line-mark {
+  width: 20px;
+  height: 20px;
+  color: oklch(0.18 0.01 40 / 0.4);
+}
+
+.mv-line-svg {
+  width: clamp(120px, 15vw, 210px);
+  height: auto;
+  color: oklch(0.18 0.01 40 / 0.5);
+  transition: color var(--dur-release, 250ms) ease, transform var(--dur-release, 250ms) ease;
+}
+
+.mv-line-item:hover .mv-line-svg {
+  color: var(--mv-accent);
+  transform: scale(1.05);
+}
+
+.mv-line-dot {
+  fill: var(--mv-accent);
+}
+
+.mv-line-caption {
+  text-align: center;
+}
+
+.mv-line-no {
   font-family: "Space Mono", monospace;
   font-size: 9px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: oklch(0.97 0.01 85 / 0.75);
+  opacity: 0.45;
+  margin-bottom: 6px;
+}
+
+.mv-line-name-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mv-line-index {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.mv-line-name {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(17px, 1.6vw, 22px);
+  transition: color var(--dur-release, 250ms) ease;
+}
+
+.mv-line-item:hover .mv-line-name {
+  color: var(--mv-accent);
 }
 
 .mv-collection-footline {
@@ -835,34 +972,99 @@ a, button {
 
 /* ---------- Atelier ---------- */
 
+/* A diagonal maroon/cream split rather than a rotating 3D viewer — the finalized
+   reference for this plate is pure graphic/editorial (heritage stat + craft
+   timeline), no product render at all. .mv-atelier-wedge is the maroon panel, an
+   absolutely-positioned clipped shape sitting under the cream page background
+   (see .mv-page--atelier) rather than a real grid column, so its diagonal edge can
+   cut across the two content columns instead of following a straight gutter. */
 .mv-atelier {
+  position: relative;
   width: 100%;
   height: 100%;
-  padding: 7vw 6%;
   display: grid;
-  grid-template-columns: 6fr 6fr;
-  gap: 48px;
+  grid-template-columns: 1fr 1fr;
   align-items: center;
 }
 
-.mv-atelier-plate {
-  position: relative;
-  aspect-ratio: 5 / 4;
-  /* Same fix as .mv-cover-plate: derive size from whichever axis (row height vs.
-     column width) is tighter, instead of always sizing off width and risking a
-     vertical overflow on a wide-but-short viewport. */
-  height: 100%;
-  width: auto;
-  max-width: 100%;
-  justify-self: center;
-  border: 1px solid oklch(0.97 0.01 85 / 0.25);
-  overflow: hidden;
+.mv-atelier-wedge {
+  position: absolute;
+  inset: 0;
+  width: 58%;
+  background: var(--mv-cover-bg);
+  clip-path: polygon(0 0, 100% 0, 76% 100%, 0 100%);
+  z-index: 0;
 }
 
-.mv-atelier-plate canvas {
+/* A crosshair sitting right where the diagonal seam crosses — same technical-drawing
+   flourish as Plates 01/04/07 (see CROSSHAIR_MARK_SVG in home.js, shared markup). */
+.mv-atelier-seam-mark {
+  position: absolute;
+  left: 40%;
+  top: 50%;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  color: oklch(0.18 0.01 40 / 0.4);
+  pointer-events: none;
+}
+
+.mv-atelier-seam-mark svg {
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
+}
+
+.mv-atelier-left {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: 8vw 10% 8vw 6%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: var(--mv-paper);
+}
+
+.mv-atelier-fig {
+  position: absolute;
+  top: 9%;
+  left: 6%;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+
+.mv-atelier-since {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1.08;
+  margin: 0;
+}
+
+.mv-atelier-tagline {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.8;
+  opacity: 0.5;
+  max-width: 200px;
+  margin: 44px 0 0;
+}
+
+.mv-atelier-right {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: 8vw 6% 8vw 5%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: var(--mv-ink);
 }
 
 .mv-atelier-label {
@@ -875,6 +1077,7 @@ a, button {
   font-size: clamp(56px, 7vw, 100px);
   line-height: 0.9;
   margin: 0;
+  color: var(--mv-accent);
 }
 
 .mv-atelier-caption {
@@ -886,14 +1089,76 @@ a, button {
   margin: 4px 0 0;
 }
 
+/* Five key stages (of the eighteen — see .mv-atelier-number) strung along one
+   dashed line, each badge numbered by its real position in that sequence rather
+   than 1-5, so "18" here and the headline stat above are visibly the same number. */
+.mv-atelier-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin: 32px 0 28px;
+}
+
+.mv-atelier-timeline::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 15px;
+  bottom: 15px;
+  border-left: 1px dashed oklch(0.4 0.16 25 / 0.5);
+}
+
+.mv-atelier-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mv-atelier-step-badge {
+  position: relative;
+  z-index: 1;
+  width: 29px;
+  height: 29px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--mv-collection-bg);
+  border: 1px solid var(--mv-atelier-accent);
+  color: var(--mv-atelier-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+}
+
+.mv-atelier-step-name {
+  flex: 1;
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(15px, 1.4vw, 19px);
+}
+
+.mv-atelier-step-dur {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  opacity: 0.5;
+  white-space: nowrap;
+}
+
 .mv-atelier-body {
+  position: relative;
   font-family: "Bodoni Moda", serif;
   font-style: italic;
   font-size: 15px;
   line-height: 1.6;
   opacity: 0.85;
-  max-width: 340px;
-  margin: 20px 0 0;
+  max-width: 380px;
+  margin: 0;
+  padding-left: 18px;
+  border-left: 2px solid var(--mv-accent);
 }
 
 /* ---------- Corner registration marks (Materials / Wearer / Manifesto) ---------- */
@@ -1109,8 +1374,35 @@ a, button {
 }
 
 .mv-wearer-tab {
+  position: relative; /* anchors .mv-wearer-tab-mark below */
   text-align: left;
   color: oklch(0.97 0.01 85 / 0.4);
+}
+
+/* A crosshair "targeting" mark hovering over whichever tab is active — echoes the
+   same technical-drawing language as the diagrams on Plate 04 (see CROSSHAIR_MARK_SVG
+   in home.js, shared between the two). Hidden on inactive tabs. */
+.mv-wearer-tab-mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+  opacity: 0;
+  color: oklch(0.97 0.01 85 / 0.55);
+  pointer-events: none;
+  transition: opacity var(--dur-release, 250ms) ease;
+}
+
+.mv-wearer-tab-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mv-wearer-tab.is-active .mv-wearer-tab-mark {
+  opacity: 1;
 }
 
 .mv-wearer-tab-numeral {
@@ -1169,6 +1461,10 @@ a, button {
   color: var(--mv-atelier-accent);
 }
 
+/* A "case file" card standing in for real photography — deliberately abstract/graphic
+   rather than a fake photo, matching the same technical-drawing language as Plate 04's
+   line-art diagrams (a file header, document-line stubs, and a roman-numeral edition
+   badge) instead of the plain diagonal-hatch placeholder this replaced. */
 .mv-wearer-image {
   position: absolute;
   top: 16%;
@@ -1176,26 +1472,93 @@ a, button {
   width: 28%;
   aspect-ratio: 3 / 4;
   transform: rotate(4deg);
-  background: repeating-linear-gradient(
-    125deg,
-    oklch(0.3 0.05 30),
-    oklch(0.3 0.05 30) 16px,
-    oklch(0.25 0.04 28) 16px,
-    oklch(0.25 0.04 28) 32px
-  );
+  background: oklch(0.26 0.07 30);
+  border: 1px solid oklch(0.97 0.01 85 / 0.14);
   box-shadow: 0 30px 60px -25px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 14px;
+  gap: 18px;
+  padding: 22px;
   text-align: center;
   text-decoration: none;
   color: inherit;
   cursor: default;
   pointer-events: none;
   transition: transform 0.35s var(--ease-out-soft), box-shadow 0.35s var(--ease-out-soft);
+}
+
+.mv-wearer-file-label {
+  align-self: flex-start;
+  width: 100%;
+  padding-bottom: 10px;
+  border-bottom: 1px solid oklch(0.97 0.01 85 / 0.18);
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: oklch(0.97 0.01 85 / 0.7);
+}
+
+.mv-wearer-file-lines {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mv-wearer-file-lines span {
+  display: block;
+  height: 1px;
+  background: oklch(0.97 0.01 85 / 0.26);
+}
+
+.mv-wearer-file-lines span:nth-child(1) {
+  width: 92%;
+}
+
+.mv-wearer-file-lines span:nth-child(2) {
+  width: 76%;
+}
+
+.mv-wearer-file-lines span:nth-child(3) {
+  width: 85%;
+}
+
+.mv-wearer-file-lines span:nth-child(4) {
+  width: 58%;
+}
+
+.mv-wearer-file-lines span:nth-child(5) {
+  width: 70%;
+}
+
+.mv-wearer-file-badge {
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--mv-atelier-accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.mv-wearer-file-numeral {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--mv-atelier-accent);
+}
+
+.mv-wearer-file-ed {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 10px;
+  color: var(--mv-atelier-accent);
+  opacity: 0.85;
 }
 
 .mv-wearer-image-caption {
@@ -1388,20 +1751,48 @@ a, button {
 /* ---------- Colophon ---------- */
 
 .mv-colophon {
+  position: relative;
   width: 100%;
   height: 100%;
   padding: 6vw 6%;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  overflow: hidden;
+}
+
+/* A faint "00" watermark in the corner — same flourish as the cover's own outlined
+   issue number (see .mv-cover-ghost), closing the magazine's numbering out. */
+.mv-colophon-ghost {
+  position: absolute;
+  right: -2%;
+  bottom: -12%;
+  z-index: 0;
+  font-family: "Bodoni Moda", serif;
+  font-size: clamp(140px, 18vw, 260px);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px oklch(0.18 0.01 40 / 0.1);
+  pointer-events: none;
+  user-select: none;
 }
 
 .mv-colophon-top {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: 1.3fr 0.85fr 0.85fr 0.85fr;
   gap: 40px;
   padding-bottom: 36px;
   border-bottom: 1px solid oklch(0.18 0.01 40 / 0.18);
+}
+
+.mv-colophon-mark {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 18px;
+  color: oklch(0.18 0.01 40 / 0.5);
 }
 
 .mv-colophon-wordmark {
@@ -1409,6 +1800,16 @@ a, button {
   font-size: clamp(30px, 3.6vw, 46px);
   line-height: 1;
   margin: 0;
+}
+
+.mv-colophon-sub {
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 0.6;
+  max-width: 280px;
+  margin: 14px 0 0;
 }
 
 .mv-colophon-col {
@@ -1429,6 +1830,27 @@ a, button {
 
 .mv-colophon-col a {
   text-align: left;
+}
+
+#mv-colophon-contents {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mv-colophon-contents-n {
+  opacity: 0.5;
+  margin-right: 4px;
+}
+
+.mv-colophon-return {
+  display: inline-block;
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--mv-accent);
+  border-bottom: 1px solid var(--mv-accent);
+  margin-top: 16px;
 }
 
 .mv-newsletter-label {
@@ -1563,16 +1985,35 @@ a, button {
     padding-top: max(10vw, 88px);
   }
 
-  .mv-cover-plate,
-  .mv-atelier-plate {
+  .mv-cover-plate {
     height: auto;
     width: 100%;
     max-width: none;
     justify-self: stretch;
+    aspect-ratio: 16 / 10;
   }
 
-  .mv-cover-plate {
-    aspect-ratio: 16 / 10;
+  /* The diagonal wedge only reads correctly against the desktop's two-column layout
+     — stacked, it would cut across both columns rather than sitting behind just the
+     left one. Dropped in favor of a plain flat panel colored the same maroon. */
+  .mv-atelier-wedge,
+  .mv-atelier-seam-mark {
+    display: none;
+  }
+
+  .mv-atelier-left {
+    background: var(--mv-cover-bg);
+    padding: 10vw 8%;
+  }
+
+  .mv-atelier-fig {
+    position: static;
+    margin-bottom: 40px;
+    opacity: 0.6;
+  }
+
+  .mv-atelier-right {
+    padding: 8vw 8%;
   }
 
   /* Stacked, the rail is taller than the row the desktop layout caps it to, so its own
@@ -1606,17 +2047,16 @@ a, button {
     padding-bottom: calc(6vw + 56px);
   }
 
+  /* Stacked instead of side-by-side, so there's no single shared axis line running
+     behind all three any more — each item's own row-2 diagram is centre enough. */
   .mv-collection-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 28px;
   }
 
-  .mv-plate:first-child {
-    grid-row: auto;
-  }
-
-  .mv-plate-media {
-    aspect-ratio: 4 / 3;
+  .mv-collection-grid::before {
+    display: none;
   }
 
   .mv-colophon-top {
@@ -1764,12 +2204,6 @@ a, button {
 
   .mv-manifesto-reg {
     margin-top: 24px;
-  }
-}
-
-@media (max-width: 560px) {
-  .mv-collection-grid {
-    grid-template-columns: 1fr;
   }
 }
 

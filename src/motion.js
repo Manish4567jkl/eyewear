@@ -12,29 +12,36 @@ gsap.registerPlugin(ScrollTrigger, CustomEase, SplitText);
 // for the handful of reveals that should read as having physical weight.
 CustomEase.create("expoOut", "0.16, 1, 0.3, 1");
 CustomEase.create("overshoot", "0.34, 1.56, 0.64, 1");
-CustomEase.create("quintIn", "0.7, 0, 0.84, 0");
+// A gentle, even ease-in-out — no violent acceleration at either end — for page-leave
+// choreography. Replaces an earlier quintic-in curve ("0.7, 0, 0.84, 0") that stayed
+// almost still through most of its run then rocketed away right at the cut: technically
+// an "accelerate away" mirror of the entrance ease, but in practice it read as a sudden,
+// hurried yank rather than one continuous unhurried motion.
+CustomEase.create("smoothOut", "0.45, 0, 0.2, 1");
 
 export const EASE = {
   entrance: "expoOut", // aggressive-decel entrance for text/images — the default "in" ease
   overshoot: "overshoot", // small over-travel + settle, for the reveals that should feel weighted
-  exit: "quintIn", // accelerate-away curve for page-leave choreography — the mirror of "entrance"
+  exit: "smoothOut", // even, unhurried curve for page-leave choreography — see smoothOut above
   hoverIn: "power4.out", // hover/tilt "snap toward" — short, sharp deceleration
   hoverOut: "power2.out", // hover/tilt "release" — a touch softer/slower than the snap in
   scrub: "none", // linear — a scrub tween should never re-ease on top of the scroll input itself
 };
 
 // Durations in seconds. Kept short and named so a call site reads as intent, not a
-// magic number: micro-interactions are 150–250ms, page-leave/entrance choreography
-// runs slower — this is a real cross-document navigation with a hard cut in the
-// middle (no root cross-fade, see view-transitions.css), so exit and entrance both
-// need enough presence on their own to read as one continuous motion rather than
-// a blink either side of the cut.
+// magic number: micro-interactions (hover/tilt) stay quick and responsive at
+// 150–250ms, but page-leave/entrance choreography runs deliberately slower — this is
+// a real cross-document navigation with a hard cut in the middle (no root cross-fade,
+// see view-transitions.css), and a rushed exit/entrance either side of that cut reads
+// as a hurried snap rather than one continuous, unhurried motion. Raised from an
+// earlier, snappier pass (exit 0.48/reveal 0.62/revealLg 0.85) specifically because
+// that read as "sliding fast," not as taking its time.
 export const DUR = {
   snap: 0.15, // hover-in, tilt tracking
   release: 0.25, // hover-out, tilt reset
-  exit: 0.48, // page-leave choreography, before the real navigation fires
-  reveal: 0.62, // text/small-element entrances
-  revealLg: 0.85, // image/panel entrances
+  exit: 0.85, // page-leave choreography, before the real navigation fires
+  reveal: 0.9, // text/small-element entrances
+  revealLg: 1.3, // image/panel entrances
 };
 
 /**

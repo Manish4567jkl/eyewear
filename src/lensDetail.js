@@ -1955,7 +1955,11 @@ async function loadProduct(prod) {
       else if (category === "hinge") object.material = mats.hinge;
       else if (category === "acetate") object.material = mats.acetate;
       else if (category === "handles") object.material = mats.handles;
-      else if (category === "text") object.material = mats.text;
+      // The Ostrande's "text" mesh is the real Carrera wordmark baked into that
+      // source asset — not a Thorne & Vale logo, so it's hidden outright rather than
+      // just recolored (see PART_ORDER below, which no longer offers a Text swatch
+      // for the same reason).
+      else if (category === "text") object.visible = false;
       else if (category === "frame") object.material = mats.frame;
       object.castShadow = true;
       object.receiveShadow = true;
@@ -2064,7 +2068,10 @@ async function loadProduct(prod) {
 //
 // The label set is derived from the meshes the loaded model actually has (see
 // setAvailablePartsFromMeshes) — no fixed slot count, no per-SKU special casing.
-const PART_ORDER = ["frame", "acetate", "handles", "hinge", "lens", "text"];
+// No "text" here — the Ostrande's only "text" mesh is the Carrera wordmark baked into
+// the source asset (hidden outright in loadProduct, not recolored), so there's nothing
+// for a Text swatch to control on any current product.
+const PART_ORDER = ["frame", "acetate", "handles", "hinge", "lens"];
 
 const stripEl = document.querySelector("#material-strip");
 const partsEl = document.querySelector("#material-parts");
@@ -2402,6 +2409,6 @@ Promise.all([
   revealStage({
     eyebrow: ".ph-label",
     headline: ".ph-title",
-    body: [".ph-brand", "#room-switcher", "#glasses-switcher", "#customize-bar"],
+    body: ["#close-plate", ".ph-brand", "#room-switcher", "#glasses-switcher", "#customize-bar"],
   });
 });

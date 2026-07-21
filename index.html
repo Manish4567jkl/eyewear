@@ -46,17 +46,35 @@
         <!-- PLATE 01 — COVER -->
         <section class="mv-page mv-page--cover" data-page="cover">
           <div class="mv-cover">
-            <div>
+            <div class="mv-cover-ghost" aria-hidden="true">
+              <span class="mv-cover-ghost-num">07</span>
+              <svg class="mv-cover-ghost-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-width="1" />
+                <line x1="12" y1="0" x2="12" y2="24" stroke="currentColor" stroke-width="1" />
+                <line x1="0" y1="12" x2="24" y2="12" stroke="currentColor" stroke-width="1" />
+              </svg>
+            </div>
+            <div class="mv-cover-copy">
               <div class="mv-cover-issue">ISSUE NO. 07 — SPRING/SUMMER 2026</div>
               <h1 class="mv-cover-title">The Line.</h1>
+              <div class="mv-cover-title-dots" aria-hidden="true">
+                <span class="mv-cover-title-dot"></span>
+                <span class="mv-cover-title-dot"></span>
+              </div>
               <p class="mv-cover-sub">
                 Modern eyewear, considered from the hinge up — an issue on frame, material, and light.
               </p>
             </div>
-            <div class="mv-cover-plate">
+            <a
+              class="mv-cover-plate"
+              id="mv-cover-plate"
+              href="/mannequin.html?slug=the-cassian"
+              data-magnify="true"
+              data-lead
+            >
               <canvas id="mv-cover-canvas"></canvas>
-              <div class="mv-plate-caption">COVER PLATE — THE OSTRANDE, GRADE 5 TITANIUM</div>
-            </div>
+              <div class="mv-plate-caption">COVER PLATE — THE CASSIAN, HAND-FINISHED ACETATE</div>
+            </a>
           </div>
         </section>
 
@@ -134,18 +152,27 @@
         <!-- PLATE 05 — ATELIER -->
         <section class="mv-page mv-page--atelier" data-page="atelier">
           <div class="mv-atelier">
-            <div class="mv-atelier-plate">
-              <canvas id="mv-atelier-canvas"></canvas>
-              <div class="mv-plate-caption">PLATE 05 — THE CASSIAN, HAND-FINISHED ACETATE</div>
+            <div class="mv-atelier-wedge" aria-hidden="true"></div>
+            <svg class="mv-atelier-seam-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-width="1" />
+              <line x1="12" y1="0" x2="12" y2="24" stroke="currentColor" stroke-width="1" />
+              <line x1="0" y1="12" x2="24" y2="12" stroke="currentColor" stroke-width="1" />
+            </svg>
+            <div class="mv-atelier-left">
+              <div class="mv-corner mv-corner--pale mv-corner--tl"></div>
+              <div class="mv-atelier-fig">FIG. 05 — WORKSHOP, BOLOGNA</div>
+              <h2 class="mv-atelier-since">Since<br />1962.</h2>
+              <p class="mv-atelier-tagline">One workshop. One family. Four generations of hand-finishers.</p>
             </div>
-            <div>
+            <div class="mv-atelier-right">
               <div class="mv-plate-label mv-atelier-label">PLATE 05 — THE ATELIER</div>
               <p class="mv-atelier-number">18</p>
               <p class="mv-atelier-caption">hand-finished stages, per frame</p>
-              <p class="mv-atelier-body">
+              <div class="mv-atelier-timeline" id="mv-atelier-timeline"></div>
+              <blockquote class="mv-atelier-body">
                 From raw acetate block to hinge-set, in a single Bologna workshop we've worked with since the
                 beginning.
-              </p>
+              </blockquote>
             </div>
           </div>
         </section>
@@ -193,6 +220,14 @@
             <p class="mv-wearer-bio" id="mv-wearer-bio"></p>
             <div class="mv-wearer-rec" id="mv-wearer-rec"></div>
             <a class="mv-wearer-image" id="mv-wearer-image" href="/night-editor.html" data-lead data-magnify="true" tabindex="-1">
+              <span class="mv-wearer-file-label" id="mv-wearer-file-label"></span>
+              <div class="mv-wearer-file-lines" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <div class="mv-wearer-file-badge">
+                <span class="mv-wearer-file-numeral" id="mv-wearer-file-numeral"></span>
+                <span class="mv-wearer-file-ed">ed.</span>
+              </div>
               <span class="mv-wearer-image-caption" id="mv-wearer-image-caption"></span>
               <span class="mv-wearer-image-hint" id="mv-wearer-image-hint"></span>
             </a>
@@ -234,16 +269,27 @@
         <!-- PLATE 09 — COLOPHON -->
         <section class="mv-page mv-page--colophon" data-page="colophon">
           <div class="mv-colophon">
+            <div class="mv-colophon-ghost" aria-hidden="true">00</div>
             <div class="mv-colophon-top">
-              <h2 class="mv-colophon-wordmark">Thorne &<br />Vale</h2>
+              <div class="mv-colophon-brand">
+                <svg class="mv-colophon-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-width="1" />
+                  <line x1="12" y1="0" x2="12" y2="24" stroke="currentColor" stroke-width="1" />
+                  <line x1="0" y1="12" x2="24" y2="12" stroke="currentColor" stroke-width="1" />
+                </svg>
+                <h2 class="mv-colophon-wordmark">Thorne &<br />Vale</h2>
+                <p class="mv-colophon-sub">Nine plates on the making of a frame. Bologna atelier, since 1962.</p>
+              </div>
               <div class="mv-colophon-col">
                 <span class="mv-colophon-col-label">Contents</span>
-                <a href="#" data-jump="configurator" data-magnify="true">Configurator</a>
-                <a href="#" data-jump="collection" data-magnify="true">Collection</a>
-                <a href="#" data-jump="atelier" data-magnify="true">Atelier</a>
-                <a href="#" data-jump="materials" data-magnify="true">Materials</a>
-                <a href="#" data-jump="wearer" data-magnify="true">The Wearer</a>
-                <a href="#" data-jump="manifesto" data-magnify="true">Manifesto</a>
+                <div id="mv-colophon-contents"></div>
+              </div>
+              <div class="mv-colophon-col">
+                <span class="mv-colophon-col-label">Credits</span>
+                <span>Creative Direction — Thorne &amp; Vale Studio</span>
+                <span>Typefaces — Bodoni Moda, Space Mono</span>
+                <span>Materials — Ti, Acetate, Mineral Glass</span>
+                <span>Printed on — 120gsm archival stock</span>
               </div>
               <div>
                 <span class="mv-newsletter-label">Notes from the Atelier</span>
@@ -252,12 +298,13 @@
                   <button type="submit" data-magnify="true">Submit →</button>
                 </form>
                 <div class="mv-newsletter-note" id="mv-newsletter-note"></div>
+                <a class="mv-colophon-return" href="/index.html" data-magnify="true">Return to cover ↵</a>
               </div>
             </div>
             <div class="mv-colophon-bottom">
               <span>© 2026 Thorne & Vale. Bologna / Paris.</span>
               <span class="mv-end">End.</span>
-              <a href="/configurator.html" data-magnify="true">Enter the Configurator →</a>
+              <a id="mv-colophon-cta" href="/mannequin.html?slug=the-cassian" data-magnify="true">The Cassian, On Mannequin →</a>
             </div>
           </div>
         </section>

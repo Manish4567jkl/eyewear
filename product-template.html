@@ -93,6 +93,25 @@
         z-index: 5;
       }
 
+      /* Flips the stage overlays to dark-on-light for backdrops light enough that the
+         default cream (var(--text), matching the rest of the site's dark backgrounds)
+         disappears into them — see isPresetLight/updateConfiguratorTitle in pdp.js, which
+         is what toggles this class on body. */
+      body.stage-bg-light .close-plate {
+        color: var(--ink);
+        border-color: rgba(12, 11, 10, 0.25);
+      }
+
+      body.stage-bg-light .close-plate:hover {
+        border-color: var(--ink);
+        background-color: rgba(12, 11, 10, 0.06);
+      }
+
+      body.stage-bg-light #brand,
+      body.stage-bg-light #stage .breadcrumb {
+        color: var(--ink);
+      }
+
       /* ---------- Configurator column ----------
          Restyled to the homepage/magazine design system (see src/styles/magazine.css):
          Bodoni Moda / Space Mono / Archivo, the oklch paper/ink/accent palette, sharp

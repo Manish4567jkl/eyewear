@@ -110,6 +110,23 @@ export const BACKDROP_PRESETS = [
 
 const PRESETS_BY_ID = new Map(BACKDROP_PRESETS.map((preset) => [preset.id, preset]));
 
+// Every overlay laid over the stage (close-plate, brand mark, breadcrumb) is styled cream-on-
+// dark, matching the rest of the site's own dark backgrounds — which held while every backdrop
+// preset was itself dark. Presets like Glacier break that assumption, so callers use this to
+// decide whether those overlays need to flip to dark-on-light instead of guessing per preset id
+// (which would silently go stale the next time the palette changes, exactly as happened here).
+// Relative luminance (ITU-R BT.709 weights) of the gradient's midpoint, not gonna bother
+// per-pixel — a two-stop vertical gradient's overall brightness is well represented by it.
+export function isPresetLight(presetId) {
+  const preset = PRESETS_BY_ID.get(presetId);
+  if (!preset) return false;
+  const r = (preset.topColor.r + preset.bottomColor.r) / 2;
+  const g = (preset.topColor.g + preset.bottomColor.g) / 2;
+  const b = (preset.topColor.b + preset.bottomColor.b) / 2;
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.5;
+}
+
 const TWEEN_DURATION = 0.5; // seconds — a cross-fade, not a snap
 
 // A fullscreen NDC triangle-quad: the vertex shader ignores the camera entirely and

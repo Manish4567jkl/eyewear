@@ -19,7 +19,7 @@ import {
 import { classifyMesh } from "./meshCategoryMap.js";
 import { loadStudioEnvironment, createShadowCatcherGround } from "./environment.js";
 import { setSwatchEnvironment, getSwatchCanvas, isSwatchEnvironmentReady } from "./swatchRenderer.js";
-import { createBackdrop, BACKDROP_PRESETS, getBackdropThumbnail } from "./backdrop.js";
+import { createBackdrop, BACKDROP_PRESETS, getBackdropThumbnail, isPresetLight } from "./backdrop.js";
 import { gsap, crossfadeText, EASE, DUR } from "./motion.js";
 import { getProduct, getCollection } from "./data/products.js";
 import { createLoadingTransition, navigateWithLoadingTransition } from "./loadingTransition.js";
@@ -46,6 +46,16 @@ if (!product) {
     </div>`;
   throw new Error(`[pdp] No product found for slug "${slugFromPath()}"`);
 }
+
+// This page (the 3D View/Configurator) is no longer a landing experience anywhere on
+// the site — On Mannequin is the default wherever a link would have led here, so any
+// direct visit (bookmark, typed URL, a card that still points at /products/<slug>/)
+// forwards straight to that page for this same product instead of rendering the 3D
+// View first. replace(), not a plain href set, so the redirect doesn't leave a
+// products/<slug>/ entry in history to bounce back into. Thrown after to halt this
+// script rather than let the (about-to-be-unloaded) page keep doing real work below.
+window.location.replace(`/mannequin.html?slug=${product.slug}`);
+throw new Error("[pdp] Redirecting to On Mannequin — the Configurator is no longer a landing page.");
 
 const collection = getCollection(product.collection);
 document.title = `Thorne & Vale — ${product.name}`;
@@ -159,8 +169,9 @@ const placeholderMaterial = new THREE.MeshStandardMaterial({
 
 // Product data seeds the initial finish/tint/text instead of a hardcoded constant.
 // Acetate frames have no per-part metal palette — one shared material, one color
-// control — and no separate temple/handles mesh to control, so frameMaterial and
-// handlesMaterial only exist for metal products.
+// control, and (usually) no separate temple/handles mesh to control, so frameMaterial
+// only exists for metal products. The Corbin is the one exception — see
+// hasIndependentTemple below — so handlesMaterial isn't quite as simple as "metal only".
 const frameMaterial = isAcetate ? null : createFrameMaterial(product.frameFinish);
 const acetateMaterial = isAcetate ? createAcetateMaterial(product.acetateColor) : null;
 const lensMaterial = createLensMaterial(product.lensTint);
@@ -168,8 +179,22 @@ const lensMaterial = createLensMaterial(product.lensTint);
 const hingeMaterial = createFrameMaterial(isAcetate ? (product.hingeFinish ?? "gunmetal") : product.frameFinish);
 hingeMaterial.setHingeFinish = hingeMaterial.setFrameFinish;
 
-const handlesMaterial = isAcetate ? null : createFrameMaterial(product.frameFinish);
-if (handlesMaterial) handlesMaterial.setHandlesFinish = handlesMaterial.setFrameFinish;
+// The Corbin's temple ("Temple L"/"Temple L.001" in cool-sunglasses.glb) is a genuinely
+// separate mesh from the front, unlike the Cassian/other acetate builds where front and
+// temple are one continuous piece — it's just lumped into the same "acetate"
+// classifyMesh() category as the front by meshCategoryMap.js (see that file's own
+// comment on why). Matched by product slug rather than touching that shared map, which
+// lensDetail.js/mannequinScene.js/homeViewer.js also read and aren't being given an
+// independent Temple control here — see the isCorbinTemple check in init() below.
+const hasIndependentTemple = product.slug === "the-corbin";
+const handlesMaterial = hasIndependentTemple
+  ? createAcetateMaterial(product.templeColor ?? product.acetateColor)
+  : isAcetate
+    ? null
+    : createFrameMaterial(product.frameFinish);
+if (handlesMaterial) {
+  handlesMaterial.setHandlesFinish = hasIndependentTemple ? handlesMaterial.setAcetateColor : handlesMaterial.setFrameFinish;
+}
 
 const textMaterial = createTextMaterial(product.textColor ?? "silver");
 
@@ -186,13 +211,23 @@ async function init() {
     logSceneStructure(model, "eyewear_test.glb");
 
     const acetateMeshes = [];
+    const handlesMeshes = [];
 
     model.traverse((object) => {
       if (!object.isMesh) return;
 
       const category = classifyMesh(object, MODEL_URL);
-      if (category === "acetate") acetateMeshes.push(object);
-      if (category === "lens") {
+      // See hasIndependentTemple's own comment above — this is the one place that
+      // override actually applies, pulling the Corbin's temple mesh out of the
+      // "acetate" category it shares with the front in meshCategoryMap.js.
+      const isCorbinTemple = hasIndependentTemple && /^Temple/i.test(object.name);
+
+      if (isCorbinTemple) handlesMeshes.push(object);
+      else if (category === "acetate") acetateMeshes.push(object);
+
+      if (isCorbinTemple) {
+        object.material = handlesMaterial;
+      } else if (category === "lens") {
         object.material = lensMaterial;
       } else if (category === "hinge") {
         object.material = hingeMaterial;
@@ -201,7 +236,10 @@ async function init() {
       } else if (category === "handles") {
         object.material = handlesMaterial;
       } else if (category === "text") {
-        object.material = textMaterial;
+        // The Ostrande's "text" mesh is the real Carrera wordmark baked into that
+        // source asset — hidden outright rather than recolored (see DEFAULT_TABS
+        // below, which no longer offers a Text swatch for the same reason).
+        object.visible = false;
       } else if (category === "frame") {
         object.material = frameMaterial;
       } else {
@@ -216,6 +254,11 @@ async function init() {
     // Acetate pigment is authored in "blotches across the frame", so it needs the
     // frame's real object-space size before it renders.
     if (acetateMaterial) fitAcetatePatternScale(acetateMaterial, acetateMeshes);
+    // The Corbin's temple is its own separate acetateMaterial instance (see
+    // hasIndependentTemple above), so it needs this same fit run against its own
+    // meshes — the front's fit above only measured acetateMeshes, which no longer
+    // includes the temple now that it's pulled into handlesMeshes instead.
+    if (hasIndependentTemple) fitAcetatePatternScale(handlesMaterial, handlesMeshes);
 
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
@@ -307,7 +350,8 @@ function animate() {
   acetateMaterial?.updateAcetateTween(delta);
   lensMaterial.updateLensTween(delta);
   hingeMaterial.updateFrameTween(delta);
-  handlesMaterial?.updateFrameTween(delta);
+  if (hasIndependentTemple) handlesMaterial?.updateAcetateTween(delta);
+  else handlesMaterial?.updateFrameTween(delta);
   textMaterial.updateTextTween(delta);
   controls.update();
 
@@ -694,6 +738,13 @@ const configuratorTitleEl = document.querySelector("#configurator-title");
 function updateConfiguratorTitle() {
   const activeBackdrop = BACKDROP_PRESETS.find((preset) => preset.id === backdrop.getActiveId());
   configuratorTitleEl.textContent = `${activeBackdrop?.label ?? ""} — ${formatPresetLabel(frameSection.activeName)}`;
+
+  // The close-plate/brand/breadcrumb overlays sitting on #stage are styled cream-on-dark,
+  // matching the rest of the site — which held only because every backdrop used to be dark.
+  // Presets like Glacier are light, so those overlays need to flip to dark-on-light or they
+  // disappear into it (see the .stage-bg-light rules below). This is the one place both the
+  // initial load and every later backdrop swap already funnel through.
+  document.body.classList.toggle("stage-bg-light", isPresetLight(backdrop.getActiveId()));
 }
 
 buildModelSwitcher(controlsPanel);
@@ -768,19 +819,31 @@ const frameSection = isAcetate
       },
     };
 
-// No "Temple" tab for acetate — the body (front + temples) is one continuous piece
-// sharing frameSection's own color control, so there's nothing separate to configure.
-const handlesSection = isAcetate
-  ? null
-  : {
+// No "Temple" tab for acetate builds where front and temple are one continuous piece
+// sharing frameSection's own color control — nothing separate to configure. The
+// Corbin is the one exception (see hasIndependentTemple above), with its own acetate
+// color control distinct from the front's.
+const handlesSection = hasIndependentTemple
+  ? {
       id: "handles",
       tabLabel: "Temple",
-      swatchCategory: "frame",
-      presetNames: FRAME_PRESET_NAMES,
-      activeName: product.frameFinish,
-      preview: (name) => handlesMaterial.setHandlesFinish(name),
+      swatchCategory: "acetate",
+      presetNames: ACETATE_PRESET_NAMES,
+      activeName: product.templeColor ?? product.acetateColor,
+      preview: (name) => handlesMaterial.setAcetateColor(name),
       onSelect: () => {},
-    };
+    }
+  : isAcetate
+    ? null
+    : {
+        id: "handles",
+        tabLabel: "Temple",
+        swatchCategory: "frame",
+        presetNames: FRAME_PRESET_NAMES,
+        activeName: product.frameFinish,
+        preview: (name) => handlesMaterial.setHandlesFinish(name),
+        onSelect: () => {},
+      };
 
 const sectionById = {
   frame: frameSection,
@@ -814,8 +877,10 @@ const sectionById = {
 
 // Metal products default to the full tab set when a product doesn't specify one;
 // acetate products (and any future variant) declare their own via
-// `product.configuratorTabs` — see src/data/products.js.
-const DEFAULT_TABS = ["frame", "handles", "hinge", "lens", "text"];
+// `product.configuratorTabs` — see src/data/products.js. No "text" — the Ostrande's
+// only "text" mesh is the Carrera wordmark baked into the source asset, hidden
+// outright (see the "text" branch in init() above) rather than offered as a swatch.
+const DEFAULT_TABS = ["frame", "handles", "hinge", "lens"];
 const railSections = (product.configuratorTabs ?? DEFAULT_TABS).map((id) => sectionById[id]).filter(Boolean);
 
 function computeReferenceCode(sections) {

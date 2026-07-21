@@ -104,6 +104,37 @@
         opacity: 0;
       }
 
+      /* Editorial-styled back link — mirrors product-template.html's own .close-plate
+         (bordered box, Space Mono eyebrow letter-spacing) but in the dark-photo palette
+         this page's overlays already use (pale hairline/text over the scrim, via
+         .mv-overlay's text-shadow), rather than that page's light-paper one. Sits in the
+         top-right corner, clear of the brand link opposite it. */
+      .close-plate {
+        top: 26px;
+        right: clamp(20px, 5vw, 56px);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border: 1px solid rgba(245, 242, 235, 0.35);
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--mv-paper);
+        text-decoration: none;
+        transition: border-color 250ms cubic-bezier(0.33, 1, 0.68, 1), background-color 250ms cubic-bezier(0.33, 1, 0.68, 1);
+      }
+
+      .close-plate:hover {
+        border-color: var(--mv-paper);
+        background-color: rgba(245, 242, 235, 0.08);
+      }
+
+      .close-plate .glyph {
+        font-size: 11px;
+      }
+
       .ph-brand {
         top: 26px;
         left: clamp(20px, 5vw, 56px);
@@ -472,6 +503,13 @@
     <div class="mv-scrim mv-scrim--top" aria-hidden="true"></div>
     <div class="mv-scrim mv-scrim--bottom" aria-hidden="true"></div>
 
+    <a
+      class="close-plate mv-overlay reveal"
+      id="close-plate"
+      href="/index.html"
+      data-nav-direction="back"
+      data-exit="text"
+    ><span class="glyph">✕</span> Close Plate</a>
     <a class="ph-brand mv-overlay reveal" href="/index.html" data-nav-direction="back" data-exit="text">Thorne & Vale</a>
 
     <div class="mv-caption mv-overlay">

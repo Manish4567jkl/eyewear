@@ -184,7 +184,10 @@ export const PRODUCTS = [
     acetateColor: "black",
     hingeFinish: "polishedGold",
     lensTint: "green",
-    configuratorTabs: ["frame", "hinge", "lens"],
+    // "handles" here is the Temple tab — the Corbin's temple is a genuinely separate
+    // mesh from the front (see hasIndependentTemple in pdp.js), so unlike the Cassian
+    // it gets its own acetate color control instead of following the frame's.
+    configuratorTabs: ["frame", "handles", "hinge", "lens"],
     specs: DEFAULT_ACETATE_SPECS,
   },
 ];

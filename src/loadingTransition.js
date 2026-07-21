@@ -12,7 +12,11 @@ const FADE_OUT_S = 0.35;
 // `location.href` navigation — long enough for the fade-in above, and for the
 // underlying page's own runExitTransition() (see navigateWithLoadingTransition below)
 // to actually read as motion through the loader rather than being cut off instantly.
-const NAV_HANDOFF_MS = 240;
+// runExitTransition now runs on DUR.exit (0.85s, see motion.js) — this doesn't wait for
+// the full duration (the opaque loader has already covered the screen well before then),
+// but it needs to be well clear of the old, snappier 240ms or the slower exit motion
+// underneath gets cut off just as it's getting going.
+const NAV_HANDOFF_MS = 650;
 
 function buildOverlay(palette, plateNumber) {
   const el = document.createElement("div");

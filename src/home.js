@@ -1,6 +1,5 @@
 import { gsap, SplitText, crossfadeText, EASE, DUR } from "./motion.js";
-import { PRODUCTS, getCollection, formatPrice } from "./data/products.js";
-import { swatchGradient } from "./swatchGradient.js";
+import { PRODUCTS } from "./data/products.js";
 import { mountProductViewer } from "./homeViewer.js";
 import { navigateWithLoadingTransition } from "./loadingTransition.js";
 import { initPageTransitionLinks, consumeStoredDirection } from "./pageTransition.js";
@@ -84,6 +83,18 @@ const MATERIAL_ROWS = [
   { name: "Italian Acetate", weight: "11g / front", origin: "Cadore, Italy", finish: "Hand-cut" },
   { name: "Gunmetal Hinge", weight: "1.6g / hinge", origin: "Bologna, Italy", finish: "Micro-blasted" },
   { name: "Mineral Glass", weight: "2.2g / lens", origin: "Suzhou, China", finish: "Hand-ground" },
+];
+
+// Five key stages of the Atelier's real 18-stage hand-finishing process (see
+// .mv-atelier-number) — same Bologna workshop as the Gunmetal Hinge's own origin in
+// MATERIAL_ROWS above. `stage` is that step's real position in the full sequence, not
+// 1-5, so the badges read 01/05/11/15/18 and the last one lines up with the "18" stat.
+const ATELIER_TIMELINE = [
+  { stage: "01", name: "Block cut", duration: "40 min" },
+  { stage: "05", name: "Hand shaping", duration: "3.5 hrs" },
+  { stage: "11", name: "Polish, first pass", duration: "2 hrs" },
+  { stage: "15", name: "Hinge set", duration: "50 min" },
+  { stage: "18", name: "Final inspection", duration: "20 min" },
 ];
 
 // The three real products stand in for the mockup's fictional "rooms" of wearer —
@@ -350,51 +361,99 @@ function initPager({ onChange } = {}) {
   return { goTo, get index() { return index; } };
 }
 
+// Real page order/labels — the single source of truth for both the Contents plate
+// (below) and the Colophon's own "Contents" jump-link column, so neither can drift
+// from the actual plate list (PAGE_KEYS) above.
+const PLATE_ROWS = [
+  { n: "02", t: "Contents", p: "02", key: "contents" },
+  { n: "03", t: "The Configurator", p: "03", key: "configurator" },
+  { n: "04", t: "SS26 — The Line", p: "04", key: "collection" },
+  { n: "05", t: "The Atelier", p: "05", key: "atelier" },
+  { n: "06", t: "Materials", p: "06", key: "materials" },
+  { n: "07", t: "The Wearer", p: "07", key: "wearer" },
+  { n: "08", t: "Manifesto", p: "08", key: "manifesto" },
+  { n: "09", t: "Colophon", p: "09", key: "colophon" },
+];
+
 // ==========================================================================
-// Contents plate — real page order/labels, generated instead of hardcoded so
-// it can't drift from the actual plate list above.
+// Contents plate.
 // ==========================================================================
 function renderContents() {
-  const rows = [
-    { n: "02", t: "Contents", p: "02" },
-    { n: "03", t: "The Configurator", p: "03" },
-    { n: "04", t: "SS26 — The Line", p: "04" },
-    { n: "05", t: "The Atelier", p: "05" },
-    { n: "06", t: "Materials", p: "06" },
-    { n: "07", t: "The Wearer", p: "07" },
-    { n: "08", t: "Manifesto", p: "08" },
-    { n: "09", t: "Colophon", p: "09" },
-  ];
-  $("#mv-contents-rows").innerHTML = rows
-    .map(
-      (row) => `
+  $("#mv-contents-rows").innerHTML = PLATE_ROWS.map(
+    (row) => `
       <div class="mv-contents-row">
         <span class="mv-contents-row-n">${row.n}</span>
         <span class="mv-contents-row-t">${row.t}</span>
         <span class="mv-contents-row-p">p. ${row.p}</span>
       </div>`,
-    )
-    .join("");
+  ).join("");
+}
+
+// ==========================================================================
+// Colophon plate's own "Contents" column — same PLATE_ROWS, but real in-page jump
+// links (data-jump, wired by initPager() below) rather than page-number references.
+// ==========================================================================
+function renderColophonContents() {
+  $("#mv-colophon-contents").innerHTML = PLATE_ROWS.map(
+    (row) => `<a href="#" data-jump="${row.key}" data-magnify="true"><span class="mv-colophon-contents-n">${row.n}</span> ${row.t}</a>`,
+  ).join("");
 }
 
 // ==========================================================================
 // Collection plate — the real catalog (3 products across the 2 real
-// collections), swatch-rendered the same way the mega-menu and PDP "more
-// from this collection" cards do elsewhere on the site.
+// collections), shown as minimalist line-art diagrams strung along one shared
+// axis (a technical-drawing motif — "considered", not a retail grid) rather
+// than the photo-card treatment every other product listing on the site uses.
+// Each diagram still links straight to that product's own Configurator page,
+// exactly like every other product card does.
 // ==========================================================================
+const LINE_DIAGRAM_SVG = `
+    <svg class="mv-line-svg" viewBox="0 0 220 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line x1="6" y1="50" x2="40" y2="32" stroke="currentColor" stroke-width="1" />
+      <line x1="180" y1="32" x2="214" y2="50" stroke="currentColor" stroke-width="1" />
+      <circle cx="76" cy="48" r="30" stroke="currentColor" stroke-width="1" />
+      <circle cx="144" cy="48" r="30" stroke="currentColor" stroke-width="1" />
+      <circle class="mv-line-dot" cx="76" cy="48" r="2.2" />
+      <circle class="mv-line-dot" cx="144" cy="48" r="2.2" />
+    </svg>`;
+
+// A small crosshair "registration mark" for the flagship piece, a plain pin for the
+// other two — purely decorative flourish, echoing the diagrams' own technical-drawing
+// language rather than standing in for anything real.
+const CROSSHAIR_MARK_SVG = `
+    <svg class="mv-line-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-width="1" />
+      <line x1="12" y1="0" x2="12" y2="24" stroke="currentColor" stroke-width="1" />
+      <line x1="0" y1="12" x2="24" y2="12" stroke="currentColor" stroke-width="1" />
+    </svg>`;
+
+const PIN_MARK_SVG = `
+    <svg class="mv-line-mark" viewBox="0 0 12 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line x1="6" y1="10" x2="6" y2="28" stroke="currentColor" stroke-width="1" />
+      <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1" />
+      <circle class="mv-line-dot" cx="6" cy="6" r="2" />
+    </svg>`;
+
+// Purely editorial flourish numbers — there's no real catalog, so these exist only to
+// keep the "No. XX" caption from just repeating the 01/02/03 list position already
+// sitting right beside the name.
+const LINE_FLOURISH_NO = { "the-ostrande": "04", "the-cassian": "09", "the-corbin": "07" };
+
 function renderCollection() {
   const grid = $("#mv-collection-grid");
-  const total = String(PRODUCTS.length).padStart(2, "0");
   grid.innerHTML = PRODUCTS.map((product, i) => {
-    const collection = getCollection(product.collection);
+    const n = String(i + 1).padStart(2, "0");
+    const material = product.frameConstruction === "acetate" ? "Acetate" : "Titanium";
+    const flip = i === 1; // stagger the middle item's mark/caption so the three don't read identically
     return `
-      <a class="mv-plate" href="/products/${product.slug}/" data-magnify="true" data-lead>
-        <div class="mv-plate-media" style="background:${swatchGradient(product)}; color:oklch(0.97 0.01 85 / 0.85); view-transition-name: product-${product.slug}">
-          <span class="mv-plate-counter">${String(i + 1).padStart(2, "0")} / ${total}</span>
-          <span class="mv-plate-fig">FIG. 0${i + 1} — ${product.name.toUpperCase()}</span>
-          <div class="mv-plate-meta">
-            <span class="mv-plate-name" style="view-transition-name: product-name-${product.slug}">${product.name}</span>
-            <span class="mv-plate-price">${collection.eyebrow.replace("The ", "").replace(" Collection", "").toUpperCase()} · ${formatPrice(product.price)}</span>
+      <a class="mv-line-item${flip ? " mv-line-item--flip" : ""}" href="/products/${product.slug}/" data-magnify="true" data-lead>
+        ${product.flagship ? CROSSHAIR_MARK_SVG : PIN_MARK_SVG}
+        ${LINE_DIAGRAM_SVG}
+        <div class="mv-line-caption">
+          <div class="mv-line-no">No. ${LINE_FLOURISH_NO[product.slug] ?? n} · ${material.toUpperCase()}</div>
+          <div class="mv-line-name-row">
+            <span class="mv-line-index">${n}</span>
+            <span class="mv-line-name">${product.name}</span>
           </div>
         </div>
       </a>`;
@@ -419,6 +478,22 @@ function renderMaterials() {
 }
 
 // ==========================================================================
+// Atelier plate's craft timeline — five stages of the real 18-stage process (see
+// ATELIER_TIMELINE above), generated the same way the materials table is rather
+// than hardcoded into the markup.
+// ==========================================================================
+function renderAtelierTimeline() {
+  $("#mv-atelier-timeline").innerHTML = ATELIER_TIMELINE.map(
+    (step) => `
+      <div class="mv-atelier-step">
+        <span class="mv-atelier-step-badge">${step.stage}</span>
+        <span class="mv-atelier-step-name">${step.name}</span>
+        <span class="mv-atelier-step-dur">${step.duration}</span>
+      </div>`,
+  ).join("");
+}
+
+// ==========================================================================
 // The Wearer plate — three dossiers, one active at a time, matching the
 // finalized mockup's tab-switcher interaction.
 // ==========================================================================
@@ -428,6 +503,8 @@ function initWearer() {
   const bioEl = $("#mv-wearer-bio");
   const recEl = $("#mv-wearer-rec");
   const imageEl = $("#mv-wearer-image");
+  const fileLabelEl = $("#mv-wearer-file-label");
+  const fileNumeralEl = $("#mv-wearer-file-numeral");
   const captionEl = $("#mv-wearer-image-caption");
   const hintEl = $("#mv-wearer-image-hint");
   const noEl = $("#mv-wearer-no");
@@ -437,6 +514,7 @@ function initWearer() {
   tabsEl.innerHTML = WEARER_DATA.map(
     (w, i) => `
       <button class="mv-wearer-tab" data-index="${i}" data-magnify="true">
+        <span class="mv-wearer-tab-mark" aria-hidden="true">${CROSSHAIR_MARK_SVG}</span>
         <span class="mv-wearer-tab-numeral">${w.numeral}</span>
         <span class="mv-wearer-tab-name">${w.name}</span>
       </button>`,
@@ -449,6 +527,8 @@ function initWearer() {
     crossfadeText(quoteEl, `"${dossier.quote}"`);
     crossfadeText(bioEl, dossier.bio);
     recEl.textContent = `REC. — ${dossier.rec}`;
+    fileLabelEl.textContent = `FILE — ${dossier.no}`;
+    fileNumeralEl.textContent = dossier.numeral;
     captionEl.textContent = `FIG. 07${dossier.figLabel} — ${dossier.figCaption}`;
     noEl.textContent = `NO. ${dossier.no} / EDITION SS26`;
 
@@ -809,7 +889,7 @@ function animatePlateEntrance(pageKey) {
     });
     gsap.from(".mv-configurator-stage", { opacity: 0, scale: 0.97, duration: DUR.revealLg, ease: EASE.entrance });
   } else if (pageKey === "collection") {
-    gsap.from(".mv-collection-grid .mv-plate", {
+    gsap.from(".mv-collection-grid .mv-line-item", {
       opacity: 0,
       y: 20,
       stagger: 0.08,
@@ -817,14 +897,26 @@ function animatePlateEntrance(pageKey) {
       ease: EASE.entrance,
     });
   } else if (pageKey === "atelier") {
-    gsap.set(".mv-atelier-plate", { clipPath: "inset(0 100% 0 0)" });
-    gsap.to(".mv-atelier-plate", { clipPath: "inset(0 0% 0 0)", duration: 0.9, ease: EASE.entrance });
+    gsap.set(".mv-atelier-wedge", { clipPath: "polygon(0 0, 0 0, 0 100%, 0 100%)" });
+    gsap.to(".mv-atelier-wedge", {
+      clipPath: "polygon(0 0, 100% 0, 76% 100%, 0 100%)",
+      duration: 0.9,
+      ease: EASE.entrance,
+    });
+    gsap.from([".mv-atelier-fig", ".mv-atelier-since", ".mv-atelier-tagline"], {
+      opacity: 0,
+      y: 14,
+      stagger: 0.08,
+      duration: DUR.reveal,
+      ease: EASE.entrance,
+      delay: 0.15,
+    });
     gsap.fromTo(
       ".mv-atelier-number",
       { opacity: 0, scale: 0.85 },
       { opacity: 1, scale: 1, duration: 0.55, ease: EASE.overshoot },
     );
-    gsap.from([".mv-atelier-caption", ".mv-atelier-body"], {
+    gsap.from([".mv-atelier-caption", ".mv-atelier-step", ".mv-atelier-body"], {
       opacity: 0,
       y: 12,
       stagger: 0.06,
@@ -850,6 +942,8 @@ initPageTransitionLinks();
 renderContents();
 renderCollection();
 renderMaterials();
+renderAtelierTimeline();
+renderColophonContents();
 initWearer();
 initManifesto();
 initNewsletter();
@@ -857,13 +951,40 @@ initNewsletter();
 // The cover plate box is wider than the other viewers (1/1 vs. their tighter crops), which
 // on its own just reveals more empty space around the same-sized frame — distanceScale
 // pulls the camera in a bit to keep the product reading as appropriately sized in the
-// extra width rather than looking small and lost in it.
-const coverViewer = mountProductViewer($("#mv-cover-canvas"), PRODUCTS[0], {
+// extra width rather than looking small and lost in it. PRODUCTS[1] is the Cassian —
+// deliberately not the flagship Ostrande, per the finalized cover reference.
+const coverViewer = mountProductViewer($("#mv-cover-canvas"), PRODUCTS[1], {
   autoRotate: true,
   rotateSpeed: 1.2,
   distanceScale: 0.85,
 });
-const atelierViewer = mountProductViewer($("#mv-atelier-canvas"), PRODUCTS[1], { autoRotate: true, rotateSpeed: 1.0 });
+// The cover plate hands off to a different page's own full 3D scene (On Mannequin,
+// pre-selected to the Cassian it's already showing here — see the ?slug= handling in
+// mannequinScene.js), same treatment as the configurator viewer/wall-label CTA below.
+const coverPlateEl = $("#mv-cover-plate");
+coverPlateEl.addEventListener("click", (e) => {
+  e.preventDefault();
+  // "light" to match the same destination's other entry point (pdp.js's own
+  // mode-list links to this exact URL use the same palette).
+  navigateWithLoadingTransition(coverPlateEl.getAttribute("href"), {
+    palette: "light",
+    plateNumber: "03",
+    leadEl: coverPlateEl,
+  });
+});
+
+// The Colophon's own closing CTA hands off to the same place as the cover plate
+// (On Mannequin, pre-selected to the Cassian) — same treatment for the same
+// destination.
+const colophonCtaEl = $("#mv-colophon-cta");
+colophonCtaEl.addEventListener("click", (e) => {
+  e.preventDefault();
+  navigateWithLoadingTransition(colophonCtaEl.getAttribute("href"), {
+    palette: "light",
+    plateNumber: "03",
+    leadEl: colophonCtaEl,
+  });
+});
 const configuratorViewer = mountProductViewer($("#mv-configurator-canvas"), CONFIGURATOR_MODEL_PRODUCT, {
   autoRotate: true,
   rotateSpeed: 1.6,
@@ -873,7 +994,6 @@ initConfigurator(configuratorViewer);
 
 const viewersByPage = {
   cover: coverViewer,
-  atelier: atelierViewer,
   configurator: configuratorViewer,
 };
 
