@@ -12,7 +12,7 @@ import { createLensMaterial } from "./lensMaterial.js";
 import { createTextMaterial } from "./textMaterial.js";
 import { createAcetateMaterial, fitAcetatePatternScale } from "./acetateMaterial.js";
 import { getProduct } from "./data/products.js";
-import { PART_SPECS, getMaterialState, setMaterialPreset } from "./materialState.js";
+import { PART_SPECS, getMaterialState, setMaterialPreset, hasIndependentTemple, specFor } from "./materialState.js";
 import { createLoadingTransition } from "./loadingTransition.js";
 import { loadStudioEnvironment, createShadowCatcherGround } from "./environment.js";
 import { gsap, EASE, DUR } from "./motion.js";
@@ -1872,6 +1872,9 @@ let sharedEnvMap = null;
 // of truth and the product's authored values are merely what seeds it (see materialState.js).
 function buildProductMaterials(prod) {
   const acetate = prod?.frameConstruction === "acetate";
+  // The Corbin's temple is its own acetate-bodied mesh, not metal — see
+  // hasIndependentTemple in materialState.js.
+  const independentTemple = hasIndependentTemple(prod?.slug);
   const state = getMaterialState(prod?.slug);
   const mats = {
     isAcetate: acetate,
@@ -1879,7 +1882,7 @@ function buildProductMaterials(prod) {
     acetate: acetate ? createAcetateMaterial(state.acetate) : null,
     lens: createLensMaterial(state.lens),
     hinge: createFrameMaterial(state.hinge),
-    handles: acetate ? null : createFrameMaterial(state.handles),
+    handles: independentTemple ? createAcetateMaterial(state.handles) : acetate ? null : createFrameMaterial(state.handles),
     text: createTextMaterial(state.text),
   };
   if (sharedEnvMap) applyEnvToMaterials(mats, sharedEnvMap);
@@ -1894,8 +1897,12 @@ function applyPartPreset(part, presetName) {
   if (!mats) return;
   if (part === "frame") mats.frame?.setFrameFinish(presetName);
   else if (part === "acetate") mats.acetate?.setAcetateColor(presetName);
-  else if (part === "handles") mats.handles?.setFrameFinish(presetName);
-  else if (part === "hinge") mats.hinge?.setFrameFinish(presetName);
+  else if (part === "handles") {
+    // See hasIndependentTemple in materialState.js — the Corbin's temple is its own
+    // acetate material, not a metal frame finish like every other product's.
+    if (hasIndependentTemple(currentSlug())) mats.handles?.setAcetateColor(presetName);
+    else mats.handles?.setFrameFinish(presetName);
+  } else if (part === "hinge") mats.hinge?.setFrameFinish(presetName);
   else if (part === "lens") mats.lens?.setLensTint(presetName);
   else if (part === "text") mats.text?.setTextColor(presetName);
   renderer.shadowMap.needsUpdate = true;
@@ -1908,7 +1915,11 @@ function updateProductTweens(delta) {
   const mats = productMaterials;
   if (!mats) return;
   mats.frame?.updateFrameTween?.(delta);
+  // mats.handles is a frame material for every product except the Corbin (see
+  // hasIndependentTemple), where it's acetate instead — both calls are harmless no-ops
+  // on whichever type it isn't, so both are pumped unconditionally rather than branching.
   mats.handles?.updateFrameTween?.(delta);
+  mats.handles?.updateAcetateTween?.(delta);
   mats.hinge?.updateFrameTween?.(delta);
   mats.acetate?.updateAcetateTween?.(delta);
   mats.lens?.updateLensTween?.(delta);
@@ -2042,6 +2053,7 @@ async function loadProduct(prod) {
     const model = gltf.scene;
     const mats = buildProductMaterials(prod);
     productMaterials = mats;
+    const independentTemple = hasIndependentTemple(prod?.slug);
 
     // Meshes grouped by the category that classifyMesh already resolves. This is what the
     // strip reads to decide which part labels to show, so the label set always reflects the
@@ -2050,10 +2062,15 @@ async function loadProduct(prod) {
 
     model.traverse((object) => {
       if (!object.isMesh) return;
-      const category = classifyMesh(object, modelUrl);
+      // The Corbin's temple is meshCategoryMap.js's "acetate" category too (front and
+      // temple share the same shared map entry there), but it needs its own bucket and
+      // material — see hasIndependentTemple in materialState.js.
+      const isCorbinTemple = independentTemple && /^Temple/i.test(object.name);
+      const category = isCorbinTemple ? "handles" : classifyMesh(object, modelUrl);
       if (!meshesByCategory.has(category)) meshesByCategory.set(category, []);
       meshesByCategory.get(category).push(object);
-      if (category === "lens") object.material = mats.lens;
+      if (isCorbinTemple) object.material = mats.handles;
+      else if (category === "lens") object.material = mats.lens;
       else if (category === "hinge") object.material = mats.hinge;
       else if (category === "acetate") object.material = mats.acetate;
       else if (category === "handles") object.material = mats.handles;
@@ -2070,6 +2087,11 @@ async function loadProduct(prod) {
     // Acetate pigment is authored in "blotches across the frame", so it needs the
     // frame's real object-space size before it renders.
     fitAcetatePatternScale(mats.acetate, meshesByCategory.get("acetate"));
+    // The Corbin's temple is its own separate acetateMaterial instance (see
+    // hasIndependentTemple), so it needs this same fit run against its own meshes — the
+    // front's fit above only measured the "acetate" bucket, which no longer includes the
+    // temple now that it's pulled into "handles" instead.
+    if (independentTemple) fitAcetatePatternScale(mats.handles, meshesByCategory.get("handles"));
 
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
@@ -2142,11 +2164,11 @@ function setAvailablePartsFromMeshes(meshesByCategory) {
 // lens vocabulary behind no affordance at all. The row scrolls horizontally instead
 // (see .mv-swatch-row in magazine.css), so a long palette costs layout height nothing.
 function presetsForPart(part) {
-  return PART_SPECS[part].presetNames;
+  return specFor(currentSlug(), part).presetNames;
 }
 
 function swatchFill(part, presetName) {
-  return PART_SPECS[part].getSwatch(presetName)?.hex ?? "#8a8d92";
+  return specFor(currentSlug(), part).getSwatch(presetName)?.hex ?? "#8a8d92";
 }
 
 // "polishedGold" -> "Polished Gold". Matches how the full Configurator titles its presets.
@@ -2199,7 +2221,7 @@ function buildMaterialStrip() {
       partsEl.appendChild(tick);
     }
 
-    const spec = PART_SPECS[part];
+    const spec = specFor(slug, part);
     const active = state[part];
 
     const labelEl = document.createElement("button");
@@ -2424,6 +2446,22 @@ function setSwitcherEnabled(enabled) {
   });
 }
 
+// ---------- Clean view ----------
+// Hides every overlay (see body.clean-view in mannequin.html) for an unobstructed shot of
+// the product; a double-click anywhere brings it back. Global rather than scoped to the
+// stage so it works no matter where the visitor double-clicks, including over what's left
+// visible (the hint text itself).
+const cleanViewToggleEl = document.querySelector("#clean-view-toggle");
+cleanViewToggleEl?.addEventListener("click", () => {
+  document.body.classList.add("clean-view");
+  cleanViewToggleEl.setAttribute("aria-pressed", "true");
+});
+document.addEventListener("dblclick", () => {
+  if (!document.body.classList.contains("clean-view")) return;
+  document.body.classList.remove("clean-view");
+  cleanViewToggleEl?.setAttribute("aria-pressed", "false");
+});
+
 // ---------- Boot ----------
 // Safe to start only here: every declaration the loop touches now exists (see the note at
 // the animate() definition).
@@ -2464,6 +2502,14 @@ Promise.all([
   revealStage({
     eyebrow: ".ph-label",
     headline: ".ph-title",
-    body: ["#close-plate", ".ph-brand", "#room-switcher", "#glasses-switcher", "#customize-bar", "#mode-switcher"],
+    body: [
+      "#close-plate",
+      ".ph-brand",
+      "#room-switcher",
+      "#glasses-switcher",
+      "#customize-bar",
+      "#mode-switcher",
+      "#clean-view-toggle",
+    ],
   });
 });

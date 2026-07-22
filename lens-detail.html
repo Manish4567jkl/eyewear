@@ -494,6 +494,72 @@
         outline: 1px solid var(--strip-accent);
         outline-offset: 3px;
       }
+
+      /* Clean view — bottom-right, mirroring .close-plate's box treatment (opposite
+         corner). Toggling it just adds body.clean-view; every other overlay's hide rule
+         lives with it below rather than needing its own opt-out per element. */
+      .clean-view-toggle {
+        bottom: 26px;
+        right: clamp(20px, 5vw, 56px);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border: 1px solid rgba(245, 242, 235, 0.35);
+        background: none;
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--mv-paper);
+        cursor: pointer;
+        transition: border-color 250ms cubic-bezier(0.33, 1, 0.68, 1),
+          background-color 250ms cubic-bezier(0.33, 1, 0.68, 1), opacity 250ms linear;
+      }
+
+      .clean-view-toggle:hover {
+        border-color: var(--mv-paper);
+        background-color: rgba(245, 242, 235, 0.08);
+      }
+
+      /* Same corner as the toggle it replaces once clean view is on — appears exactly
+         where the button it hid used to be, so there's still something there to notice. */
+      .clean-view-hint {
+        bottom: 26px;
+        right: clamp(20px, 5vw, 56px);
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--mv-paper);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 250ms linear;
+      }
+
+      /* !important, not just cascade order: every one of these targets gets its opacity
+         set as an INLINE style at some point (the boot reveal's GSAP tweens leave
+         style.opacity: 1 on close-plate/brand/caption/switchers when they finish, and
+         is-customizing's own toggle does the same to the strip) — an inline style with
+         no !important still beats any stylesheet rule regardless of selector
+         specificity, so plain opacity:0 here was silently losing to whatever inline
+         value GSAP (or is-customizing) had already written. Confirmed by testing: the
+         toggle and close-plate stayed visible after clicking Clean View until this was
+         added. */
+      body.clean-view .mv-scrim,
+      body.clean-view #close-plate,
+      body.clean-view .ph-brand,
+      body.clean-view .mv-caption,
+      body.clean-view .mv-strip,
+      body.clean-view .clean-view-toggle {
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      body.clean-view .clean-view-hint {
+        opacity: 0.6;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body data-product-slug="the-ostrande">
@@ -538,6 +604,14 @@
       <div class="mv-strip-meta">Plate 03 — Lens Detail</div>
       <div class="mv-parts" id="material-parts" role="group" aria-label="Customize part"></div>
     </div>
+
+    <button
+      type="button"
+      class="clean-view-toggle mv-overlay reveal"
+      id="clean-view-toggle"
+      aria-pressed="false"
+    >Clean View</button>
+    <div class="clean-view-hint mv-overlay" id="clean-view-hint" aria-hidden="true">Double-click to exit clean view</div>
 
     <script type="module" src="/src/lensDetail.js"></script>
   </body>

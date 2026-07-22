@@ -38,6 +38,27 @@ export const PART_SPECS = {
   text: { label: "Text", presetNames: TEXT_PRESET_NAMES, getSwatch: getTextPresetSwatch },
 };
 
+// The Corbin's temple ("Temple L"/"Temple L.001" in cool-sunglasses.glb) is a genuinely
+// separate mesh from the front, unlike every other product where "handles" means metal
+// temple arms matching PART_SPECS.handles above — it's its own acetate-bodied piece with
+// its own colour. pdp.js documented and handled this first (see hasIndependentTemple
+// there), but keeps fully local state and never reads this shared store, so On
+// Mannequin/Lens Detail never got the same treatment — this is that fix, centralised
+// here since both of those pages import this module already.
+export function hasIndependentTemple(slug) {
+  return slug === "the-corbin";
+}
+
+// The "handles" part's real spec is product-dependent — acetate colours for the Corbin,
+// metal finishes for everyone else — so every read of PART_SPECS.handles needs to go
+// through this instead when the SKU might be the Corbin.
+export function specFor(slug, part) {
+  if (part === "handles" && hasIndependentTemple(slug)) {
+    return { label: "Temple", presetNames: ACETATE_PRESET_NAMES, getSwatch: getAcetatePresetSwatch };
+  }
+  return PART_SPECS[part];
+}
+
 // slug -> { part: presetName }. Populated lazily from each product's authored defaults.
 const selections = new Map();
 const listeners = new Set();
@@ -51,7 +72,11 @@ function defaultsFor(slug) {
   return {
     frame: metal,
     acetate: product?.acetateColor ?? "black",
-    handles: metal,
+    // See hasIndependentTemple above — the Corbin's temple starts on its own colour
+    // (templeColor if the product ever authors one, else falling back to the same
+    // acetateColor the front starts on, matching pdp.js's own fallback), not the metal
+    // finish every other product's temple starts on.
+    handles: hasIndependentTemple(slug) ? (product?.templeColor ?? product?.acetateColor ?? "black") : metal,
     hinge: product?.hingeFinish ?? metal,
     lens: product?.lensTint ?? "clear",
     text: product?.textColor ?? "silver",
@@ -69,7 +94,7 @@ export function getMaterialState(slug) {
  * than stored, so a typo can't put the store into a state no material can render.
  */
 export function setMaterialPreset(slug, part, presetName) {
-  const spec = PART_SPECS[part];
+  const spec = specFor(slug, part);
   if (!spec) {
     console.warn(`[materialState] Unknown part "${part}".`);
     return false;
