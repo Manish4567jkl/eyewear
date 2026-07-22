@@ -3,7 +3,7 @@ import { initPageTransitionLinks, revealStage } from "./pageTransition.js";
 
 // ==========================================================================
 // The six waypoints of the Flâneur's day, ported from the illustrated map at
-// /flaneurmap.png (its own baked-in labels/times/observations are the source
+// /flaneurmap.webp (its own baked-in labels/times/observations are the source
 // of truth for those fields). x/y are percentages of the map image, read off
 // the artwork's stop markers by eye — good enough for a 34px hotspot target.
 // The weather/duration/mood/artifact fields are the richer layer this page
@@ -110,7 +110,7 @@ initPageTransitionLinks();
 revealStage({
   eyebrow: ".fl-eyebrow",
   headline: ".fl-title",
-  body: [".fl-tagline"],
+  body: [".breadcrumb", ".fl-tagline"],
   media: "#fl-panel",
 });
 

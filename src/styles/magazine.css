@@ -60,9 +60,14 @@ a, button {
   color: var(--mv-paper);
 }
 
+/* transform, not width — width animates a layout property, which the main thread has to
+   recompute every frame. This runs at the same time as the two WebGL viewers booting
+   (see mountProductViewer calls in home.js), so a width tween fights that JS for the
+   main thread and reads as a jittery, stepped draw instead of a smooth one. scaleX is
+   compositor-only, so it stays smooth no matter how busy the main thread is. */
 @keyframes mv-intro-rule {
-  from { width: 0; }
-  to { width: 220px; }
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
 @keyframes mv-intro-curtain {
@@ -112,8 +117,10 @@ a, button {
 }
 
 .mv-intro-rule {
+  width: 220px;
   height: 1px;
   background: var(--mv-ink);
+  transform-origin: left center;
   animation: mv-intro-rule 1s cubic-bezier(0.65, 0, 0.35, 1) 0.3s both;
 }
 
@@ -595,119 +602,45 @@ a, button {
   display: none;
 }
 
-.mv-room-tabs {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.mv-room-tab {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 3px 0;
-  text-align: left;
-  white-space: nowrap;
-  color: oklch(0.18 0.01 40 / 0.4);
-}
-
-.mv-room-tab-numeral {
-  font-family: "Bodoni Moda", serif;
-  font-style: italic;
-  font-size: 19px;
-}
-
-.mv-room-tab-name {
-  font-family: "Bodoni Moda", serif;
-  font-style: italic;
-  font-size: 22px;
-}
-
-.mv-room-tab.is-active {
-  color: var(--mv-accent);
-}
-
-.mv-room-tab.is-active .mv-room-tab-name {
-  font-weight: 500;
-}
-
-.mv-room-desc {
-  font-family: "Bodoni Moda", serif;
-  font-style: italic;
-  font-size: 15px;
-  line-height: 1.45;
-  opacity: 0.55;
-  max-width: 340px;
-  margin: 12px 0 22px;
-}
-
-.mv-swatch-cols {
-  display: flex;
-  gap: 48px;
-  margin-bottom: 22px;
-}
-
-.mv-swatch-group-label {
-  font-family: "Space Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  opacity: 0.5;
-  margin-bottom: 10px;
-}
-
-.mv-swatch-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.mv-swatch {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-.mv-swatch-dot {
-  display: block;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px oklch(0.18 0.01 40 / 0.2);
-  transform: scale(1);
-  transition: box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.mv-swatch.is-active .mv-swatch-dot {
-  box-shadow: 0 0 0 2px var(--mv-paper), 0 0 0 3px var(--mv-ink);
-  transform: scale(1.1);
-}
-
-.mv-swatch--tint.is-active .mv-swatch-dot {
-  box-shadow: 0 0 0 2px var(--mv-paper), 0 0 0 3px var(--mv-accent);
-}
-
 .mv-mode-list {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  margin-bottom: 20px;
+  gap: 2px;
+  margin-bottom: 28px;
 }
 
 .mv-mode {
-  font-family: "Archivo", sans-serif;
-  font-size: 16px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 11px 14px;
+  border-left: 3px solid transparent;
   text-align: left;
-  color: oklch(0.18 0.01 40 / 0.4);
+  font-family: "Bodoni Moda", serif;
+  font-style: italic;
+  font-size: clamp(20px, 2vw, 26px);
+  color: oklch(0.18 0.01 40 / 0.38);
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.mv-mode-num {
+  font-family: "Space Mono", monospace;
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
 }
 
 .mv-mode.is-active {
-  color: var(--mv-ink);
+  background: color-mix(in oklab, var(--mv-accent) 10%, var(--mv-paper));
+  border-left-color: var(--mv-accent);
+  color: var(--mv-accent);
+  font-weight: 500;
 }
 
-.mv-mode.is-active::before {
-  content: "— ";
+.mv-mode.is-active .mv-mode-num {
+  color: var(--mv-accent);
+  opacity: 0.85;
 }
 
 .mv-angles {
@@ -738,20 +671,26 @@ a, button {
 }
 
 .mv-wall-label {
-  border-top: 1px solid oklch(0.18 0.01 40 / 0.18);
-  padding-top: 14px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  border-top: 1px solid color-mix(in oklab, var(--mv-accent) 45%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--mv-accent) 45%, transparent);
+  padding: 14px 0;
 }
 
 .mv-wall-label-readout {
   font-family: "Bodoni Moda", serif;
   font-style: italic;
-  font-size: 19px;
+  font-size: 17px;
   line-height: 1.4;
 }
 
 .mv-wall-label-cta {
   display: inline-block;
-  margin-top: 12px;
+  flex-shrink: 0;
   font-family: "Space Mono", monospace;
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -781,6 +720,24 @@ a, button {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* In-context echo of .mv-viewer-label below — an overlay tag rather than a second
+   independent readout, so the two never fall out of sync (see renderActiveStates()
+   in home.js, which updates both from the same string). */
+.mv-viewer-tag {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  padding: 5px 10px;
+  background: color-mix(in oklab, var(--mv-ink) 82%, transparent);
+  color: var(--mv-paper);
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
 }
 
 .mv-viewer-caption {

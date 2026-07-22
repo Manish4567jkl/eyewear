@@ -16,61 +16,17 @@ import { initPageTransitionLinks, consumeStoredDirection } from "./pageTransitio
 const ANGLE_ROMAN = ["i", "ii", "iii", "iv"];
 const ANGLE_DEGREES = [10, 80, 190, 260];
 
-// The configurator plate reproduces the finalized mockup's own room/color/tint
-// taxonomy verbatim (Studio/Archive/Table — a viewing context, not a product picker;
-// every room configures the same frame). Each named color/tint carries the real
-// material/lens preset it renders as (see frameMaterial.js/lensMaterial.js) — the
-// nearest real equivalent to the mockup's arbitrary flat color, since those exact
-// hues don't exist as shader presets.
 const CONFIGURATOR_MODEL_PRODUCT = PRODUCTS.find((p) => p.slug === "the-ostrande");
 
-const ROOMS = [
-  {
-    numeral: "I",
-    name: "Studio",
-    desc: "Cool neutrals, shot on seamless.",
-    colors: [
-      { name: "Graphite", hex: "#2e3236", preset: "gunmetal" },
-      { name: "Bone", hex: "#e7e3db", preset: "titanium" },
-      { name: "Steel", hex: "#8b9299", preset: "brushedSilver" },
-    ],
-    tints: [
-      { name: "Clear", hex: "#dfe9f0", preset: "clear" },
-      { name: "Smoke", hex: "#4c545c", preset: "gray" },
-      { name: "Ash", hex: "#9aa4ac", preset: "gradientSmoke" },
-    ],
-  },
-  {
-    numeral: "II",
-    name: "Archive",
-    desc: "Muted tones, archival paper backdrop.",
-    colors: [
-      { name: "Charcoal", hex: "#26282b", preset: "matteBlack" },
-      { name: "Pearl", hex: "#efeee9", preset: "titanium" },
-      { name: "Slate", hex: "#7e8891", preset: "brushedSilver" },
-    ],
-    tints: [
-      { name: "Clear", hex: "#dfe9f0", preset: "clear" },
-      { name: "Graphite", hex: "#565f66", preset: "gray" },
-      { name: "Fog", hex: "#c7cdd2", preset: "blue" },
-    ],
-  },
-  {
-    numeral: "III",
-    name: "Table",
-    desc: "Flat-lay light, one accent of moss.",
-    colors: [
-      { name: "Ink", hex: "#1c1e21", preset: "matteBlack" },
-      { name: "Chalk", hex: "#e3e1da", preset: "titanium" },
-      { name: "Moss", hex: "#5c6b4f", preset: "gunmetal" },
-    ],
-    tints: [
-      { name: "Clear", hex: "#dfe9f0", preset: "clear" },
-      { name: "Smoke", hex: "#4c545c", preset: "gray" },
-      { name: "Sage", hex: "#7c9070", preset: "green" },
-    ],
-  },
-];
+// The configurator plate previews one fixed build — the mockup's own default
+// (Studio · Graphite · Clear) — rather than the full room/color/tint picker; see
+// initConfigurator(). Preset names carry the real material/lens preset they render
+// as (see frameMaterial.js/lensMaterial.js).
+const COVER_PRESET = {
+  room: "Studio",
+  color: { name: "Graphite", preset: "gunmetal" },
+  tint: { name: "Clear", preset: "clear" },
+};
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -237,14 +193,20 @@ function initPager({ onChange } = {}) {
   dotsEl.innerHTML = PAGE_KEYS.map((_, i) => `<button class="mv-dot" data-index="${i}" data-magnify="true"></button>`).join("");
   const dots = $$(".mv-dot", dotsEl);
 
-  let index = 0;
-  let previousIndex = 0;
+  // A #<pageKey> hash lands directly on that plate instead of always booting to the
+  // cover — used by the Wearer's three mini-experience pages (night-editor.html/
+  // flaneur.html/contrarian.html) to send their own "back" link straight to
+  // /index.html#wearer rather than the front of the magazine.
+  const hashIndex = PAGE_KEYS.indexOf(window.location.hash.slice(1));
+  let index = hashIndex === -1 ? 0 : hashIndex;
+  let previousIndex = index;
 
   // The counter/dots/crosshair are chrome that lives outside .mv-pages entirely —
-  // already persistent across a page turn with zero extra work. What was missing was
-  // giving the turn itself real, directional motion: the leaving plate eases OUT on the
-  // page's exit curve, the arriving plate eases IN on its entrance curve, rather than
-  // both ends of the turn sharing one symmetric CSS transition.
+  // already persistent across a page turn with zero extra work. The turn itself: one
+  // shared duration/curve for both the leaving and arriving plate (matched to the
+  // finalized reference mockup's own page-turn transition — see EASE.pageTurn), so
+  // the two stay in visual lockstep the whole way rather than each end of the turn
+  // running its own separate timing.
   function positionPlates(animate) {
     pages.forEach((page, i) => {
       const diff = i - index;
@@ -267,11 +229,10 @@ function initPager({ onChange } = {}) {
         gsap.set(page, { xPercent: diff * 100 });
         return;
       }
-      const isLeaving = i === previousIndex;
       gsap.to(page, {
         xPercent: diff * 100,
-        duration: isLeaving ? 0.85 : 1.05,
-        ease: isLeaving ? EASE.exit : EASE.entrance,
+        duration: 0.85,
+        ease: EASE.pageTurn,
         overwrite: "auto",
       });
     });
@@ -318,7 +279,7 @@ function initPager({ onChange } = {}) {
     render(true);
     setTimeout(() => {
       isTransitioning = false;
-    }, 1100); // matches positionPlates' longest tween (1.05s) plus a small margin
+    }, 950); // matches positionPlates' tween duration (0.85s) plus a small margin
   }
 
   dots.forEach((dot, i) => dot.addEventListener("click", () => goTo(i)));
@@ -591,50 +552,48 @@ function initManifesto() {
 }
 
 // ==========================================================================
-// Configurator plate — Studio/Archive/Table, exactly as the finalized mockup
-// specifies, with its static placeholder swapped for The Ostrande live-rendered via
-// the site's real Three.js pipeline. "Enter the full configurator" hands off to the
-// real thing for the complete rail (hinge, temple text, product choice, etc).
+// Configurator plate — a fixed-preset preview (Studio · Graphite · Clear) of The
+// Ostrande, live-rendered via the site's real Three.js pipeline, with only the
+// mode (3D View/On Mannequin/Lens Detail) and camera angle actually switchable
+// here. "Enter the full configurator" hands off to the real thing for the
+// complete rail (room, color, tint, hinge, temple text, product choice, etc).
 // ==========================================================================
 function initConfigurator(viewer) {
-  const tabsEl = $("#mv-room-tabs");
-  const descEl = $("#mv-room-desc");
-  const frameEl = $("#mv-frame-swatches");
-  const lensEl = $("#mv-lens-swatches");
   const readoutEl = $("#mv-wall-label-readout");
   const modesEl = $("#mv-configurator-modes");
   const anglesEl = $("#mv-angles");
   const viewerLabelEl = $("#mv-viewer-label");
+  const viewerTagEl = $("#mv-viewer-tag");
+
+  // Room/color/tint are fixed to COVER_PRESET rather than pickable here — this teaser
+  // previews the build, it doesn't let you change it; "Enter the full configurator"
+  // below is where that actually happens.
+  const { room, color, tint } = COVER_PRESET;
 
   const state = {
-    activeRoom: 0,
-    perRoomColor: ROOMS.map(() => 0),
-    perRoomTint: ROOMS.map(() => 0),
-    mode: "view3d",
     angle: null,
   };
 
-  // "On Mannequin" and "Lens Detail" have no dedicated view built yet — each links out
-  // to its own placeholder page instead of faking an in-place preview that doesn't exist.
+  // All three hand off to a dedicated page rather than switching in place. "3D View" points
+  // at /products/<slug>/ (product-template.html) — the real per-product 3D view, with its
+  // own close-plate/breadcrumb/mode-list/backdrop-picker chrome. That page used to redirect
+  // straight to On Mannequin on load (see the removed block in pdp.js); now that it renders
+  // itself, this links there directly instead of at configurator.html, the older
+  // hardcoded-single-product page that page replaced. "dark" palette matches the
+  // destination's default backdrop preset (Abyss, a near-black navy — see backdrop.js).
   const modes = [
-    { key: "view3d", label: "3D View" },
-    { key: "mannequin", label: "On Mannequin", href: "/mannequin.html" },
-    { key: "table", label: "Lens Detail", href: "/lens-detail.html" },
+    { key: "view3d", label: "3D View", href: `/products/${CONFIGURATOR_MODEL_PRODUCT.slug}/`, palette: "dark" },
+    { key: "mannequin", label: "On Mannequin", href: "/mannequin.html", palette: "light" },
+    { key: "table", label: "Lens Detail", href: "/lens-detail.html", palette: "light" },
   ];
 
-  tabsEl.innerHTML = ROOMS.map(
-    (room, i) => `
-      <button class="mv-room-tab" data-index="${i}" data-magnify="true">
-        <span class="mv-room-tab-numeral">${room.numeral}.</span>
-        <span class="mv-room-tab-name">${room.name}</span>
-      </button>`,
-  ).join("");
-
   modesEl.innerHTML = modes
-    .map((m) =>
-      m.href
-        ? `<a class="mv-mode" data-mode="${m.key}" href="${m.href}" data-magnify="true">${m.label}</a>`
-        : `<button class="mv-mode" data-mode="${m.key}" data-magnify="true">${m.label}</button>`,
+    .map(
+      (m, i) => `
+      <a class="mv-mode" data-mode="${m.key}" data-palette="${m.palette}" href="${m.href}" data-magnify="true">
+        <span class="mv-mode-num">${String(i + 1).padStart(2, "0")}</span>
+        <span class="mv-mode-label">${m.label}</span>
+      </a>`,
     )
     .join("");
 
@@ -642,79 +601,21 @@ function initConfigurator(viewer) {
     `<span class="mv-angles-label">fig.</span>` +
     ANGLE_ROMAN.map((rn, i) => `<button class="mv-angle" data-index="${i}" data-magnify="true">${rn}</button>`).join("");
 
-  function currentRoom() {
-    return ROOMS[state.activeRoom];
-  }
-
-  // Rebuilds the swatch buttons — only needed when the room (and so its color/tint
-  // option set) changes. A same-room pick just needs updateSwatchActiveStates() below,
-  // so the ring/scale CSS transition on the existing dot actually gets to play.
-  function buildSwatches() {
-    const room = currentRoom();
-    const activeColorIdx = state.perRoomColor[state.activeRoom];
-    const activeTintIdx = state.perRoomTint[state.activeRoom];
-
-    frameEl.innerHTML = room.colors
-      .map(
-        (c, i) => `
-        <button class="mv-swatch ${i === activeColorIdx ? "is-active" : ""}" data-index="${i}" data-magnify="true">
-          <span class="mv-swatch-dot" style="background:${c.hex}"></span>
-        </button>`,
-      )
-      .join("");
-
-    lensEl.innerHTML = room.tints
-      .map(
-        (t, i) => `
-        <button class="mv-swatch mv-swatch--tint ${i === activeTintIdx ? "is-active" : ""}" data-index="${i}" data-magnify="true">
-          <span class="mv-swatch-dot" style="background:${t.hex}"></span>
-        </button>`,
-      )
-      .join("");
-
-    crossfadeText(descEl, room.desc);
-    updateReadout();
-  }
-
-  function updateSwatchActiveStates() {
-    const activeColorIdx = state.perRoomColor[state.activeRoom];
-    const activeTintIdx = state.perRoomTint[state.activeRoom];
-    $$(".mv-swatch", frameEl).forEach((el, i) => el.classList.toggle("is-active", i === activeColorIdx));
-    $$(".mv-swatch", lensEl).forEach((el, i) => el.classList.toggle("is-active", i === activeTintIdx));
-    updateReadout();
-  }
-
-  function updateReadout() {
-    const room = currentRoom();
-    const color = room.colors[state.perRoomColor[state.activeRoom]];
-    const tint = room.tints[state.perRoomTint[state.activeRoom]];
-    crossfadeText(readoutEl, `${room.name} · ${color.name} Frame · ${tint.name} Lens`);
-  }
+  crossfadeText(readoutEl, `${room} · ${color.name} Frame · ${tint.name} Lens`);
 
   function renderActiveStates() {
-    $$(".mv-room-tab", tabsEl).forEach((el, i) => el.classList.toggle("is-active", i === state.activeRoom));
-    $$(".mv-mode", modesEl).forEach((el) => el.classList.toggle("is-active", el.dataset.mode === state.mode));
+    // "3D View" is this plate's only in-place mode — the other two are pure links to their
+    // own dedicated pages (see `modes` above) — so it's always the active one.
+    $$(".mv-mode", modesEl).forEach((el) => el.classList.toggle("is-active", el.dataset.mode === "view3d"));
     // The mockup's default is angle "i", label "ANGLE I" — state.angle stays null (rather
     // than 0) until a user explicitly picks one, so the auto-rotate-resume checks elsewhere
     // can tell "never picked" from "picked the first one"; displayAngle just backfills that
     // default for the label/highlight without touching the rotation logic.
     const displayAngle = state.angle ?? 0;
     $$(".mv-angle", anglesEl).forEach((el, i) => el.classList.toggle("is-active", i === displayAngle));
-    const label =
-      state.mode === "view3d"
-        ? `3D VIEW — ANGLE ${ANGLE_ROMAN[displayAngle].toUpperCase()}`
-        : state.mode === "mannequin"
-          ? "ON MANNEQUIN"
-          : "LENS DETAIL — TABLE";
+    const label = `3D VIEW — ANGLE ${ANGLE_ROMAN[displayAngle].toUpperCase()}`;
     crossfadeText(viewerLabelEl, label);
-  }
-
-  function applyToViewer() {
-    const room = currentRoom();
-    const color = room.colors[state.perRoomColor[state.activeRoom]];
-    const tint = room.tints[state.perRoomTint[state.activeRoom]];
-    viewer.setFrameFinish(color.preset);
-    viewer.setLensTint(tint.preset);
+    crossfadeText(viewerTagEl, label);
   }
 
   function setAngle(i) {
@@ -730,63 +631,18 @@ function initConfigurator(viewer) {
     renderActiveStates();
   }
 
-  function selectRoom(i) {
-    state.activeRoom = i;
-    state.angle = null;
-    viewer.setAutoRotate(state.mode === "view3d");
-    buildSwatches();
-    applyToViewer();
-    renderActiveStates();
-  }
-
-  tabsEl.addEventListener("click", (e) => {
-    const btn = e.target.closest(".mv-room-tab");
-    if (btn) selectRoom(Number(btn.dataset.index));
-  });
-
-  frameEl.addEventListener("click", (e) => {
-    const btn = e.target.closest(".mv-swatch");
-    if (!btn) return;
-    state.perRoomColor[state.activeRoom] = Number(btn.dataset.index);
-    updateSwatchActiveStates();
-    applyToViewer();
-  });
-
-  lensEl.addEventListener("click", (e) => {
-    const btn = e.target.closest(".mv-swatch");
-    if (!btn) return;
-    state.perRoomTint[state.activeRoom] = Number(btn.dataset.index);
-    updateSwatchActiveStates();
-    applyToViewer();
-  });
-
   modesEl.addEventListener("click", (e) => {
     const btn = e.target.closest(".mv-mode");
     if (!btn) return;
-    // Mannequin/Lens Detail are real links now (see `modes` above) — intercept just
-    // long enough to play the loading transition before handing off to the real
-    // navigation, rather than running the in-place preview switch below.
-    if (btn.tagName === "A") {
-      e.preventDefault();
-      navigateWithLoadingTransition(btn.getAttribute("href"), { palette: "light", plateNumber: "03", leadEl: btn });
-      return;
-    }
-    const nextMode = btn.dataset.mode;
-    const wasDetail = state.mode === "table";
-    const isDetail = nextMode === "table";
-    state.mode = nextMode;
-
-    if (isDetail && !wasDetail) {
-      viewer.setAutoRotate(false);
-      viewer.controls.target.set(0, 0, 0);
-      viewer.camera.position.multiplyScalar(0.55);
-      viewer.controls.update();
-    } else if (!isDetail && wasDetail) {
-      viewer.camera.position.multiplyScalar(1 / 0.55);
-      viewer.controls.update();
-    }
-    viewer.setAutoRotate(nextMode === "view3d" && state.angle === null);
-    renderActiveStates();
+    // Every mode is a real link to its own dedicated page (see `modes` above) — intercept
+    // just long enough to play the loading transition before handing off to the real
+    // navigation.
+    e.preventDefault();
+    navigateWithLoadingTransition(btn.getAttribute("href"), {
+      palette: btn.dataset.palette,
+      plateNumber: "03",
+      leadEl: btn,
+    });
   });
 
   anglesEl.addEventListener("click", (e) => {
@@ -796,9 +652,9 @@ function initConfigurator(viewer) {
   });
 
   // The "View Plate" crosshair CTA (see initCursor) hovers this same viewer — clicking
-  // it hands off to the real product page it's previewing. Gated on movement since
-  // mousedown so it doesn't fire mid-orbit-drag (the viewer's OrbitControls already
-  // owns drag-to-rotate).
+  // it hands off to the real product page it's previewing (see the `modes` comment above).
+  // Gated on movement since mousedown so it doesn't fire mid-orbit-drag (the viewer's
+  // OrbitControls already owns drag-to-rotate).
   const viewerEl = $("#mv-viewer");
   let viewerPointerDown = null;
   viewerEl.addEventListener("pointerdown", (e) => {
@@ -827,8 +683,8 @@ function initConfigurator(viewer) {
     });
   });
 
-  applyToViewer();
-  buildSwatches();
+  viewer.setFrameFinish(color.preset);
+  viewer.setLensTint(tint.preset);
   renderActiveStates();
 }
 
@@ -880,7 +736,7 @@ function animatePlateEntrance(pageKey) {
       .to(".mv-cover-sub", { opacity: 0.85, y: 0, x: 0, duration: DUR.reveal, ease: EASE.entrance }, "-=0.35")
       .to(".mv-cover-plate", { clipPath: "inset(0 0 0% 0)", duration: 0.9, ease: EASE.entrance }, "-=0.55");
   } else if (pageKey === "configurator") {
-    gsap.from([".mv-room-tabs", ".mv-room-desc", ".mv-swatch-cols", ".mv-mode-list", ".mv-angles", ".mv-wall-label"], {
+    gsap.from([".mv-mode-list", ".mv-angles", ".mv-wall-label"], {
       opacity: 0,
       y: 14,
       stagger: 0.06,

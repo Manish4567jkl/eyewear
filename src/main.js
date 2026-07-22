@@ -1,10 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { loadModel } from "./loader.js";
-import { logSceneStructure } from "./sceneInspector.js";
 import { createFrameMaterial, FRAME_PRESET_NAMES, getFramePresetSwatch } from "./frameMaterial.js";
 import { createLensMaterial, LENS_PRESET_NAMES, getLensPresetSwatch } from "./lensMaterial.js";
-import { createTextMaterial, TEXT_PRESET_NAMES, getTextPresetSwatch } from "./textMaterial.js";
 import { loadStudioEnvironment, createShadowCatcherGround } from "./environment.js";
 import {
   setSwatchEnvironment,
@@ -84,7 +82,7 @@ new ResizeObserver(updateStageSize).observe(stageEl);
 // Real studio HDRI drives PBR reflections/ambient lighting on the frame metal. Captured
 // (rather than a bare fire-and-forget chain) so the loading transition below can gate
 // on it alongside the model.
-const environmentPromise = loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
+const environmentPromise = loadStudioEnvironment(renderer, "/studio_small_09_1k.hdr")
   .then((envMap) => {
     scene.environment = envMap;
     // Explicit per-material envMap so each metal material's own (higher) envMapIntensity
@@ -165,8 +163,6 @@ hingeMaterial.setHingeFinish = hingeMaterial.setFrameFinish;
 const handlesMaterial = createFrameMaterial(INITIAL_FRAME_FINISH);
 handlesMaterial.setHandlesFinish = handlesMaterial.setFrameFinish;
 
-const textMaterial = createTextMaterial("silver");
-
 // Classification is name-based against aviator-glass3.glb's actual scene graph
 // (verified against the real console.table output, not guessed): frame/handles/hinge/
 // lens/gap/bridge are all literal node names. "Nose_pad_001" is NOT a traversable mesh
@@ -202,8 +198,6 @@ async function init() {
     const gltf = await loadModel(MODEL_URL);
     const model = gltf.scene;
 
-    logSceneStructure(model, "eyewear_test.glb");
-
     model.traverse((object) => {
       if (!object.isMesh) return;
 
@@ -215,7 +209,11 @@ async function init() {
       } else if (category === "handles") {
         object.material = handlesMaterial;
       } else if (category === "text") {
-        object.material = textMaterial;
+        // This mesh is the real Carrera wordmark baked into aviator-glass3.glb — not a
+        // Thorne & Vale logo, so it's hidden outright rather than recolored (see
+        // railSections below, which no longer offers a Text tab for the same reason;
+        // pdp.js/mannequinScene.js/lensDetail.js already treat it this way).
+        object.visible = false;
       } else if (category === "frame") {
         object.material = frameMaterial;
       } else {
@@ -312,7 +310,6 @@ function animate() {
   lensMaterial.updateLensTween(delta);
   hingeMaterial.updateFrameTween(delta);
   handlesMaterial.updateFrameTween(delta);
-  textMaterial.updateTextTween(delta);
   controls.update();
 
   // The backdrop is captured to a texture and assigned as scene.background rather than
@@ -647,31 +644,6 @@ function buildBackdropPicker(container, backdropInstance) {
 const controlsPanel = document.querySelector("#controls");
 buildBackdropPicker(controlsPanel, backdrop);
 
-// Tracks the *target* frame preset name, not the live (mid-tween) material state —
-// frameMaterial.getFinishState() reads the animating uniform, which is still at the
-// old value the instant setFrameFinish() is called, so using it here would make
-// "matchFrame" always lag one selection behind. The preset's known values are correct
-// immediately, with no race against the 0.8s tween.
-let currentFramePresetName = INITIAL_FRAME_FINISH;
-
-function frameSwatchAsTextOverride() {
-  const swatch = getFramePresetSwatch(currentFramePresetName);
-  return {
-    baseColor: new THREE.Color(swatch.hex),
-    metalness: swatch.metalness,
-    roughness: swatch.roughness,
-  };
-}
-
-// "matchFrame" has no fixed color — its tile mirrors whatever the frame currently is,
-// and if it's the active text selection, the text material itself follows the frame too.
-function refreshMatchFrameLink() {
-  materialRail.refreshTile("text", "matchFrame");
-  if (materialRail.getActiveName("text") === "matchFrame") {
-    textMaterial.setTextColor("matchFrame", frameSwatchAsTextOverride());
-  }
-}
-
 const railSections = [
   {
     id: "frame",
@@ -681,10 +653,7 @@ const railSections = [
     getSwatch: getFramePresetSwatch,
     activeName: INITIAL_FRAME_FINISH,
     preview: (name) => frameMaterial.setFrameFinish(name),
-    onSelect: (name) => {
-      currentFramePresetName = name;
-      refreshMatchFrameLink();
-    },
+    onSelect: () => {},
   },
   {
     id: "handles",
@@ -715,21 +684,6 @@ const railSections = [
     activeName: "clear",
     preview: (name) => lensMaterial.setLensTint(name),
     onSelect: () => {},
-  },
-  {
-    id: "text",
-    tabLabel: "Text",
-    swatchCategory: "text",
-    presetNames: TEXT_PRESET_NAMES,
-    getSwatch: (name) => (name === "matchFrame" ? getFramePresetSwatch(currentFramePresetName) : getTextPresetSwatch(name)),
-    activeName: "silver",
-    preview: (name) =>
-      textMaterial.setTextColor(name, name === "matchFrame" ? frameSwatchAsTextOverride() : undefined),
-    onSelect: () => {},
-    getSwatchExtras: (name) =>
-      name === "matchFrame"
-        ? { frameOverride: frameSwatchAsTextOverride(), cacheKey: `text:matchFrame:${currentFramePresetName}` }
-        : {},
   },
 ];
 

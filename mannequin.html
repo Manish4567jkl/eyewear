@@ -181,6 +181,7 @@
       }
 
       .mv-room-btn {
+        display: inline-block;
         font-family: "Space Mono", monospace;
         font-size: 10px;
         letter-spacing: 0.18em;
@@ -506,11 +507,11 @@
     <a
       class="close-plate mv-overlay reveal"
       id="close-plate"
-      href="/index.html"
+      href="/index.html#configurator"
       data-nav-direction="back"
       data-exit="text"
     ><span class="glyph">✕</span> Close Plate</a>
-    <a class="ph-brand mv-overlay reveal" href="/index.html" data-nav-direction="back" data-exit="text">Thorne & Vale</a>
+    <a class="ph-brand mv-overlay reveal" href="/index.html#configurator" data-nav-direction="back" data-exit="text">Thorne & Vale</a>
 
     <div class="mv-caption mv-overlay">
       <div class="ph-label reveal">PLATE 03 — THE CONFIGURATOR</div>
@@ -521,6 +522,10 @@
         <button type="button" class="mv-room-btn" id="customize-toggle" aria-pressed="false" aria-controls="material-strip">
           Customize
         </button>
+      </div>
+      <div class="mv-room-switcher reveal" id="mode-switcher" role="group" aria-label="Choose display mode">
+        <span class="mv-room-btn is-active" aria-current="page">On Mannequin</span>
+        <a class="mv-room-btn" id="mode-switch-link" href="/lens-detail.html">Lens Detail</a>
       </div>
     </div>
 

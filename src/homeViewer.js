@@ -5,8 +5,8 @@ import { loadStudioEnvironment, createShadowCatcherGround } from "./environment.
 import { createFrameMaterial } from "./frameMaterial.js";
 import { createLensMaterial } from "./lensMaterial.js";
 import { createAcetateMaterial, fitAcetatePatternScale } from "./acetateMaterial.js";
-import { createTextMaterial } from "./textMaterial.js";
 import { classifyMesh } from "./meshCategoryMap.js";
+import { gsap, DUR, EASE } from "./motion.js";
 
 const DEFAULT_MODEL_URL = "/models/aviator-glass3.glb";
 
@@ -31,6 +31,12 @@ function ensureEnvironment(renderer) {
  * configurator preview), not full product-page interaction.
  */
 export function mountProductViewer(canvas, product, { autoRotate = true, rotateSpeed = 1.6, distanceScale = 1 } = {}) {
+  // Hidden until the first model has actually resolved and rendered a frame — otherwise
+  // the model pops into an already-visible canvas the instant its GLTF fetch resolves,
+  // which reads as a jarring snap rather than an arrival. Faded in from load(), never on
+  // a guessed timeout.
+  canvas.style.opacity = "0";
+
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -83,7 +89,6 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
   let lensMaterial = createLensMaterial(product.lensTint);
   let hingeMaterial = createFrameMaterial(isAcetate ? (product.hingeFinish ?? "gunmetal") : product.frameFinish);
   let handlesMaterial = isAcetate ? null : createFrameMaterial(product.frameFinish);
-  let textMaterial = createTextMaterial(product.textColor ?? "silver");
 
   const placeholderMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5, metalness: 0.1 });
 
@@ -119,7 +124,11 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
       else if (category === "hinge") object.material = hingeMaterial;
       else if (category === "acetate") object.material = acetateMaterial;
       else if (category === "handles") object.material = handlesMaterial;
-      else if (category === "text") object.material = textMaterial;
+      // The Ostrande's "text" mesh is the real Carrera wordmark baked into
+      // aviator-glass3.glb — not a Thorne & Vale logo, so it's hidden outright rather
+      // than recolored (see main.js/pdp.js/mannequinScene.js/lensDetail.js, which all
+      // treat it the same way).
+      else if (category === "text") object.visible = false;
       else if (category === "frame") object.material = frameMaterial;
       else object.material = placeholderMaterial;
       object.castShadow = true;
@@ -133,6 +142,15 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
 
   async function load(nextProduct) {
     const token = ++loadToken;
+
+    // A later swap (setProduct) fades the outgoing model out first — a hard cut to the
+    // new model mid-frame would read as a jitter. The very first load has nothing to
+    // fade out (canvas is already at opacity 0 from mount), so it skips straight to load.
+    if (currentModel) {
+      await gsap.to(canvas, { opacity: 0, duration: DUR.reveal, ease: EASE.entrance });
+      if (token !== loadToken) return;
+    }
+
     currentProduct = nextProduct;
     modelUrl = nextProduct.model ?? DEFAULT_MODEL_URL;
     isAcetate = nextProduct.frameConstruction === "acetate";
@@ -147,7 +165,6 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
     lensMaterial = createLensMaterial(nextProduct.lensTint);
     hingeMaterial = createFrameMaterial(isAcetate ? (nextProduct.hingeFinish ?? "gunmetal") : nextProduct.frameFinish);
     handlesMaterial = isAcetate ? null : createFrameMaterial(nextProduct.frameFinish);
-    textMaterial = createTextMaterial(nextProduct.textColor ?? "silver");
 
     const envMap = await sharedEnvMapPromise;
     if (token !== loadToken) return;
@@ -167,6 +184,12 @@ export function mountProductViewer(canvas, product, { autoRotate = true, rotateS
     if (currentModel) scene.remove(currentModel);
     currentModel = model;
     scene.add(model);
+
+    // Force shader compilation now, synchronously, before the reveal — otherwise it
+    // stalls lazily on the next rendered frame, right as the canvas is fading in.
+    renderer.compile(scene, camera);
+    renderer.render(scene, camera);
+    gsap.to(canvas, { opacity: 1, duration: DUR.revealLg, ease: EASE.entrance });
   }
 
   function resize() {

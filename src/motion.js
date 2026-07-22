@@ -18,11 +18,17 @@ CustomEase.create("overshoot", "0.34, 1.56, 0.64, 1");
 // an "accelerate away" mirror of the entrance ease, but in practice it read as a sudden,
 // hurried yank rather than one continuous unhurried motion.
 CustomEase.create("smoothOut", "0.45, 0, 0.2, 1");
+// The homepage pager's own page-turn curve, matched to the finalized reference
+// mockup's plain CSS `transition: transform 0.85s cubic-bezier(0.76,0,0.24,1)` — one
+// single symmetric ease-in-out shared by the leaving AND arriving plate at the same
+// duration, rather than each end of the turn running its own separate curve/timing.
+CustomEase.create("pageTurn", "0.76, 0, 0.24, 1");
 
 export const EASE = {
   entrance: "expoOut", // aggressive-decel entrance for text/images — the default "in" ease
   overshoot: "overshoot", // small over-travel + settle, for the reveals that should feel weighted
   exit: "smoothOut", // even, unhurried curve for page-leave choreography — see smoothOut above
+  pageTurn: "pageTurn", // homepage pager's own plate-to-plate turn — see pageTurn above
   hoverIn: "power4.out", // hover/tilt "snap toward" — short, sharp deceleration
   hoverOut: "power2.out", // hover/tilt "release" — a touch softer/slower than the snap in
   scrub: "none", // linear — a scrub tween should never re-ease on top of the scroll input itself

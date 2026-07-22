@@ -4,8 +4,11 @@ import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
 /**
  * Loads the studio HDRI from /public and PMREM-generates it into a texture
  * suitable for scene.environment (drives IBL reflections on the frame metal).
+ * 1k, not 2k — this only ever feeds scene.environment (never scene.background, see the
+ * call sites), so it's blurred through PMREM's roughness mip chain before anything
+ * samples it; there's no path that shows it at native resolution.
  */
-export function loadStudioEnvironment(renderer, url = "/studio_small_09_2k.hdr") {
+export function loadStudioEnvironment(renderer, url = "/studio_small_09_1k.hdr") {
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   pmremGenerator.compileEquirectangularShader();
 

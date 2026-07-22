@@ -118,7 +118,7 @@ initPageTransitionLinks();
 revealStage({
   eyebrow: ".co-eyebrow",
   headline: ".co-title",
-  body: [".co-tagline"],
+  body: [".breadcrumb", ".co-tagline"],
   media: "#co-board",
 });
 

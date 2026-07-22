@@ -142,7 +142,7 @@ initPageTransitionLinks();
 revealStage({
   eyebrow: ".ne-eyebrow",
   headline: ".ne-title",
-  body: [".ne-tagline"],
+  body: [".breadcrumb", ".ne-tagline"],
   media: "#ne-panel",
 });
 

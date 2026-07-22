@@ -1,7 +1,25 @@
 import { resolve } from "path";
-import { existsSync, mkdirSync, copyFileSync, readdirSync, rmSync } from "fs";
+import { existsSync, mkdirSync, copyFileSync, readdirSync, readFileSync, rmSync } from "fs";
 import { defineConfig } from "vite";
 import { COLLECTIONS, PRODUCTS } from "./src/data/products.js";
+
+// DRACOLoader.js references its own bundled decoder via static `new URL(..., import.meta.url)`
+// calls (see node_modules/three/examples/jsm/loaders/DRACOLoader.js) — Vite/Rollup treats those
+// as asset imports and copies the referenced files into dist/assets/ unconditionally, even though
+// our own DRACOLoader instance (see src/loader.js) always calls setDecoderPath("/draco/") and so
+// never actually fetches them at runtime. This asset-URL handling happens ahead of the normal
+// resolve/alias pipeline, so aliasing the specifiers away doesn't stop Rollup from emitting them
+// (confirmed: tried it, files still land in dist/assets/ unchanged). Deleting the emitted files by
+// exact byte match in closeBundle below is what actually works — nothing ever fetches them, so
+// removing them post-build is safe; public/draco/ (fetched via setDecoderPath) is the only copy
+// that's real.
+const DEAD_DRACO_ASSETS = [
+  "draco_decoder.js",
+  "draco_decoder.wasm",
+  "draco_wasm_wrapper.js",
+  "gltf/draco_decoder.wasm",
+  "gltf/draco_wasm_wrapper.js",
+].map((p) => resolve(__dirname, "node_modules/three/examples/jsm/libs/draco", p));
 
 // Clean, data-driven routes (/collections/<slug>/, /products/<slug>/) over a plain
 // Vite MPA with no server framework: one physical template file per route *type*
@@ -49,6 +67,21 @@ function dataDrivenRoutes() {
       // now that every slug has its own copy.
       rmSync(productTemplate, { force: true });
       rmSync(collectionTemplate, { force: true });
+
+      // See DEAD_DRACO_ASSETS above — strip three.js's own unused decoder bundle by
+      // exact byte match, since Rollup gives each copy an unpredictable content hash.
+      const assetsDir = resolve(outDir, "assets");
+      if (existsSync(assetsDir)) {
+        const deadBuffers = DEAD_DRACO_ASSETS.filter(existsSync).map((p) => readFileSync(p));
+        for (const file of readdirSync(assetsDir)) {
+          const filePath = resolve(assetsDir, file);
+          const buf = readFileSync(filePath);
+          if (deadBuffers.some((dead) => dead.length === buf.length && dead.equals(buf))) {
+            rmSync(filePath);
+          }
+        }
+      }
+
       if (readdirSync(outDir).length === 0) rmSync(outDir, { recursive: true, force: true });
     },
   };

@@ -6,7 +6,6 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { loadModel } from "./loader.js";
-import { logSceneStructure } from "./sceneInspector.js";
 import { classifyMesh } from "./meshCategoryMap.js";
 import { createFrameMaterial } from "./frameMaterial.js";
 import { createLensMaterial } from "./lensMaterial.js";
@@ -52,6 +51,12 @@ const ROOMS = [
     // room (unlit bake) and the product materials all carry explicit envMaps, so in this
     // room nothing currently reads it. Left at 1.0 as a neutral default.
     envIntensity: 1.0,
+    // Studio1 was running the shared BLOOM_THRESHOLD (0.94) at this room's exposure (1.25):
+    // enough of the bright cream table/riser bake cleared that threshold that the whole
+    // surface bloomed into a soft wash instead of just the real light sources. studio2's own
+    // fix values (0.14/0.2/1.35) pulled that back too far here — eased back up partway
+    // toward the shared defaults for a touch more glow while keeping the table from washing out.
+    bloom: { strength: 0.16, radius: 0.24, threshold: 1.15 },
   },
   {
     id: "studio2",
@@ -208,6 +213,15 @@ const ROOMS = [
     // studio3 bakes its live rig rather than a lightmap, and its room spot already does
     // most of the work on the product (see productLight), so its IBL stays at full weight.
     envIntensity: 1.0,
+    // This room is a bigger footprint than studio1 (±2.75 vs ±2.0, see `bounds`), but was
+    // using the shared default fillIntensity (0.5) tuned against studio1's smaller volume —
+    // the key spotlight's direct throw doesn't reach the far/side walls here, so with only
+    // the default hemisphere fill to fall back on, those walls dropped to near-black and the
+    // coffered panel moulding disappeared entirely — read as the room "glitching based on
+    // camera angle" (walls in the spot's throw looked fine, walls outside it went flat
+    // black). Same fix as mannequinScene.js's studio3, confirmed there by screenshotting the
+    // same orbit angles before/after.
+    roomRig: { fillIntensity: 0.9 },
     shadowRadius: 4, // crisper contact shadow for the big product (studio1 stays soft at 10)
     // Warm accent pool beneath the slab, now only a hint. At higher values it spilled past the
     // slab edges and made the whole suspended slab read as a glowing light fixture rather than
@@ -358,6 +372,54 @@ const VignetteShader = {
 const vignettePass = new ShaderPass(VignetteShader);
 composer.addPass(vignettePass);
 
+// Finishing pass — very light film grain plus a whisper of radial chromatic aberration,
+// the two touches that read as "shot on a real camera" rather than a flat render, without
+// reaching for anything as loud as bloom. Both are deliberately near-invisible at these
+// strengths: grain flickers per-frame (via uTime) so it never reads as texture/dirt baked
+// onto the lens, and the aberration only separates colour a fraction of a pixel even at
+// the frame edges. Always-on, unlike vignette — there's no room where "shot on a real
+// camera" is the wrong look, so this isn't gated per-config the way vignette/bloom are.
+const FinishShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uTime: { value: 0 },
+    uGrainStrength: { value: 0.018 },
+    uAberrationStrength: { value: 0.0012 },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uTime;
+    uniform float uGrainStrength;
+    uniform float uAberrationStrength;
+    varying vec2 vUv;
+
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453123);
+    }
+
+    void main() {
+      vec2 centered = vUv - 0.5;
+      // Offset grows with distance from centre, so the middle of the frame (the product)
+      // stays clean and only the far edges pick up any colour fringing.
+      vec2 dir = centered * uAberrationStrength * length(centered);
+      float r = texture2D(tDiffuse, vUv - dir).r;
+      float g = texture2D(tDiffuse, vUv).g;
+      float b = texture2D(tDiffuse, vUv + dir).b;
+
+      float grain = hash(vUv * vec2(1920.0, 1080.0) + uTime) - 0.5;
+      vec3 color = vec3(r, g, b) + grain * uGrainStrength;
+
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `,
+};
+const finishPass = new ShaderPass(FinishShader);
+composer.addPass(finishPass);
+
 function resize() {
   const w = stageEl.clientWidth || 1;
   const h = stageEl.clientHeight || 1;
@@ -379,7 +441,7 @@ new ResizeObserver(resize).observe(stageEl);
 // per-room `exposure` values exist, dragging the whole image down to compensate for a
 // product that was lit too hot in the first place).
 scene.environmentIntensity = 1.1;
-const environmentPromise = loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
+const environmentPromise = loadStudioEnvironment(renderer, "/studio_small_09_1k.hdr")
   .then((envMap) => {
     fallbackEnvMap = envMap;
     // A room bake always wins. On a slow HDRI fetch this can resolve after a room has
@@ -510,6 +572,9 @@ function animate() {
   frameTimer.update();
   // Finish/tint changes tween toward their target, so they must be advanced every frame.
   updateProductTweens(frameTimer.getDelta());
+  // Drives the grain's per-frame flicker (see FinishShader above) — real time, not a
+  // frame counter, so the flicker rate doesn't change with the display's refresh rate.
+  finishPass.uniforms.uTime.value = frameTimer.getElapsed();
   controls.update();
   // Contain the camera after OrbitControls has moved it (covers drag, zoom and the easing
   // tail from damping), so it slides along a wall/floor/ceiling instead of punching through.
@@ -953,9 +1018,6 @@ function makeCofferedCeilingMaterial(spec) {
 
       // Seam distance is carried in METRES, not cell fractions, so the reveal keeps the same
       // physical width whatever the panel size is set to.
-      vec2 ceilCell = fract( ceilP / u_panelSize );
-      vec2 ceilEdge = min( ceilCell, 1.0 - ceilCell ) * u_panelSize;
-      float ceilBorder = min( ceilEdge.x, ceilEdge.y );
       // u_seamWidth (18mm) is a fixed WORLD distance; at typical room viewing distances
       // that's sub-pixel in screen space, which a raw smoothstep over it aliases rather than
       // anti-aliases — invisible in a still frame, but shimmering as the camera moves, since
@@ -964,8 +1026,18 @@ function makeCofferedCeilingMaterial(spec) {
       // transition width at ~1.5x that keeps the edge always at least a couple of screen
       // pixels wide — genuinely soft up close, cleanly anti-aliased from a distance, instead
       // of a line that's either too thin to render correctly or crawling.
-      float ceilBorderAA = max( u_seamWidth, fwidth( ceilBorder ) * 1.5 );
-      float ceilGrid = 1.0 - smoothstep( 0.0, ceilBorderAA, ceilBorder );
+      // Taken on ceilP itself — the plain, continuous world coordinate — NOT on ceilEdge/
+      // ceilBorder below: those fold every panelSize via fract()/min(), so they carry a real
+      // value discontinuity at each fold. Differencing across that fold (as adjacent screen
+      // pixels straddling it do) spikes fwidth() there, which flared the seam wide for a row
+      // of pixels — worse at some camera angles than others, since where the fold lands on
+      // screen (and how obliquely it's viewed) changes frame to frame.
+      vec2 ceilAlongAA = max( vec2( u_seamWidth ), fwidth( ceilP ) * 1.5 );
+      vec2 ceilCell = fract( ceilP / u_panelSize );
+      vec2 ceilEdge = min( ceilCell, 1.0 - ceilCell ) * u_panelSize;
+      float ceilGridX = 1.0 - smoothstep( 0.0, ceilAlongAA.x, ceilEdge.x );
+      float ceilGridZ = 1.0 - smoothstep( 0.0, ceilAlongAA.y, ceilEdge.y );
+      float ceilGrid = max( ceilGridX, ceilGridZ );
 
       // The coffered field stops short of the walls, leaving a plain margin all round. A grid
       // running edge-to-edge gets cut arbitrarily by the walls into part-panels, which is the
@@ -1073,10 +1145,16 @@ function makePaneledWallMaterial(spec) {
       // coffered ceiling shader, which had the same bug). fwidth() floors each transition's
       // width at roughly a pixel and a half on screen, so it stays soft up close and clean
       // anti-aliased from a distance instead of crawling.
+      // Taken on wallAlong itself — the plain, continuous world coordinate — NOT on
+      // wallEdgeX below: that folds every panelWidth via fract()/min(), so it carries a real
+      // value discontinuity at each fold, and differencing across it (as adjacent screen
+      // pixels straddling it do) spikes fwidth() there. That's what read as the wall
+      // glitching depending on camera angle — the fold's screen position (and how obliquely
+      // it's viewed) changes with the camera, so the spike only showed up from some angles.
+      float wallAlongAA = max( u_seamWidth, fwidth( wallAlong ) * 1.5 );
       float wallCellX = fract( wallAlong / u_panelWidth );
       float wallEdgeX = min( wallCellX, 1.0 - wallCellX ) * u_panelWidth;
-      float wallEdgeXAA = max( u_seamWidth, fwidth( wallEdgeX ) * 1.5 );
-      float wallVerticalSeam = 1.0 - smoothstep( 0.0, wallEdgeXAA, wallEdgeX );
+      float wallVerticalSeam = 1.0 - smoothstep( 0.0, wallAlongAA, wallEdgeX );
 
       // The panel field is bordered top and bottom (baseboard and cornice height) rather
       // than running the full floor-to-ceiling wall — an unbroken vertical seam running
@@ -1312,13 +1390,6 @@ async function loadRoomModel(config) {
     const bakedMap = src?.map ?? src?.emissiveMap ?? null;
     const bakeInEmissive = !src?.map && !!src?.emissiveMap;
 
-    // Diagnostic: what the GLB actually exported for each surface, per room — so studio1 vs
-    // studio3 material types/props can be compared in the console.
-    console.log(
-      `[lensDetail:${config.id}] mesh "${object.name}" src=${src?.type} name="${srcName}" ` +
-        `map=${!!src?.map} emissiveMap=${!!src?.emissiveMap} metalness=${src?.metalness} roughness=${src?.roughness}`,
-    );
-
     let material;
     let litSurface = false;
     if (config.rods && /Rod|Brass/i.test(srcName)) {
@@ -1405,15 +1476,9 @@ async function loadRoomModel(config) {
   }
 
 
-  const box = new THREE.Box3().setFromObject(room);
-  const size = box.getSize(new THREE.Vector3());
-  console.log(
-    `[lensDetail] ${config.id} loaded — size ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}, ${strips} strip(s).`,
-  );
   if (missingBake > 0) {
     console.warn(`[lensDetail] ${missingBake} ${config.id} surface(s) had no baked texture — check the export.`);
   }
-  logSceneStructure(room, config.id);
   return roomGroup;
 }
 
@@ -2052,7 +2117,6 @@ async function loadProduct(prod) {
     scene.add(model);
     productModel = model;
     // Final scale + placement is applied per room by applyRoomConfig → positionProductOnRiser.
-    console.log(`[lensDetail] ${fetchUrl} loaded OK.`);
     return true;
   } catch (error) {
     console.error(`[lensDetail] Failed to load product model (${fetchUrl}):`, error);
@@ -2105,7 +2169,6 @@ let availableParts = [];
 // a preset vocabulary to offer for it.
 function setAvailablePartsFromMeshes(meshesByCategory) {
   availableParts = PART_ORDER.filter((part) => PART_SPECS[part] && meshesByCategory.has(part));
-  console.log(`[lensDetail] strip parts: ${availableParts.join(", ") || "none"}`);
 }
 
 // Every preset the part has, in authored order — the palettes are the point of this
@@ -2128,6 +2191,15 @@ function formatPresetName(name) {
 
 function currentSlug() {
   return GLASSES[activeGlassesIndex].slug;
+}
+
+// The mode-switcher's "On Mannequin" link has to carry the currently active frame
+// across — otherwise switching modes would silently reset to GLASSES[0] instead of
+// staying on whatever the visitor was actually looking at. Re-pointed on boot and on
+// every switchGlasses().
+const modeSwitchLinkEl = document.querySelector("#mode-switch-link");
+function updateModeSwitchLink() {
+  if (modeSwitchLinkEl) modeSwitchLinkEl.href = `/mannequin.html?slug=${currentSlug()}`;
 }
 
 // Selecting a label closes whichever row was open — the underline and the row are driven by
@@ -2224,7 +2296,17 @@ function selectPartPreset(part, presetName) {
 }
 
 // ---------- Glasses switching ----------
-let activeGlassesIndex = 0;
+// A link into this page (the mode-switcher's own "Lens Detail" link on mannequin.html,
+// and vice versa) can ask for a specific frame via ?slug=, so switching modes keeps
+// whichever glasses were already active rather than resetting to GLASSES[0]. Falls
+// back to 0 for a bare visit or an unknown slug.
+function initialGlassesIndex() {
+  const slug = new URLSearchParams(window.location.search).get("slug");
+  const idx = GLASSES.findIndex((g) => g.slug === slug);
+  return idx === -1 ? 0 : idx;
+}
+
+let activeGlassesIndex = initialGlassesIndex();
 let swappingGlasses = false;
 
 // Frees the outgoing frame's GPU resources. Its materials are per-product (rebuilt on every
@@ -2244,6 +2326,11 @@ async function switchGlasses(index) {
   setGlassesSwitcherEnabled(false);
   updateGlassesSwitcherActive(index);
 
+  // Quick fade out on the site's easing, load, then fade back in — no hard cut (same
+  // treatment as switchRoom above; a plain remove-then-add popped the old frame out and
+  // the new one in on the same frame, with nothing on the riser while the new one loaded).
+  await gsap.to(canvas, { opacity: 0, duration: DUR.reveal, ease: EASE.entrance });
+
   if (productModel) {
     productModel.parent?.remove(productModel);
     disposeProductModel(productModel);
@@ -2254,6 +2341,7 @@ async function switchGlasses(index) {
   const ok = await loadProduct(prod);
   if (ok) {
     activeGlassesIndex = index;
+    updateModeSwitchLink();
     // Re-seat on the riser, lens-up — positionProductOnRiser measures THIS model's own
     // rotated bbox fresh, so its proportions never drift from the last frame's.
     const roomConfig = ROOMS[activeRoomIndex];
@@ -2265,6 +2353,7 @@ async function switchGlasses(index) {
     renderFrame();
   }
 
+  gsap.to(canvas, { opacity: 1, duration: DUR.revealLg, ease: EASE.entrance });
   swappingGlasses = false;
   setGlassesSwitcherEnabled(true);
 }
@@ -2405,10 +2494,11 @@ Promise.all([
   buildRoomSwitcher();
   buildGlassesSwitcher();
   buildMaterialStrip();
+  updateModeSwitchLink();
   if (roomOk && productOk) setStatus(`${ROOMS[0].label} — the Ostrande on the display riser.`);
   revealStage({
     eyebrow: ".ph-label",
     headline: ".ph-title",
-    body: ["#close-plate", ".ph-brand", "#room-switcher", "#glasses-switcher", "#customize-bar"],
+    body: ["#close-plate", ".ph-brand", "#room-switcher", "#glasses-switcher", "#customize-bar", "#mode-switcher"],
   });
 });

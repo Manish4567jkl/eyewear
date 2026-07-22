@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { loadModel } from "./loader.js";
-import { logSceneStructure } from "./sceneInspector.js";
 import { createFrameMaterial, FRAME_PRESET_NAMES, getFramePresetSwatch } from "./frameMaterial.js";
 import {
   createLensMaterial,
@@ -46,16 +45,6 @@ if (!product) {
     </div>`;
   throw new Error(`[pdp] No product found for slug "${slugFromPath()}"`);
 }
-
-// This page (the 3D View/Configurator) is no longer a landing experience anywhere on
-// the site — On Mannequin is the default wherever a link would have led here, so any
-// direct visit (bookmark, typed URL, a card that still points at /products/<slug>/)
-// forwards straight to that page for this same product instead of rendering the 3D
-// View first. replace(), not a plain href set, so the redirect doesn't leave a
-// products/<slug>/ entry in history to bounce back into. Thrown after to halt this
-// script rather than let the (about-to-be-unloaded) page keep doing real work below.
-window.location.replace(`/mannequin.html?slug=${product.slug}`);
-throw new Error("[pdp] Redirecting to On Mannequin — the Configurator is no longer a landing page.");
 
 const collection = getCollection(product.collection);
 document.title = `Thorne & Vale — ${product.name}`;
@@ -131,7 +120,7 @@ new ResizeObserver(updateStageSize).observe(stageEl);
 // Captured (rather than left as a bare fire-and-forget chain) so the loading
 // transition below can gate on it alongside the model — "environment fully loaded"
 // is part of what "ready" means for this scene, not just the mesh.
-const environmentPromise = loadStudioEnvironment(renderer, "/studio_small_09_2k.hdr")
+const environmentPromise = loadStudioEnvironment(renderer, "/studio_small_09_1k.hdr")
   .then((envMap) => {
     scene.environment = envMap;
     frameMaterial?.setEnvironment(envMap);
@@ -207,8 +196,6 @@ async function init() {
   try {
     const gltf = await loadModel(MODEL_URL);
     const model = gltf.scene;
-
-    logSceneStructure(model, "eyewear_test.glb");
 
     const acetateMeshes = [];
     const handlesMeshes = [];
